@@ -5,7 +5,10 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ChangePasswordRequest;
 use App\Http\Requests\ForgotPasswordRequest;
 use App\Http\Requests\LoginRequest;
+use App\Http\Requests\RegisterRequest;
+use App\Http\Requests\RegisterRequestCodeRequest;
 use App\Http\Requests\ResetPasswordRequest;
+use App\Models\AuditLog;
 use App\Services\AuthService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,7 +23,6 @@ class AuthController extends Controller
 
     /**
      * POST /login
-     * Login with email + password.
      */
     public function login(LoginRequest $request): JsonResponse
     {
@@ -45,6 +47,8 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
 
+        AuditLog::logEvent('login', $user->email, $request->ip(), $user->id);
+
         return response()->json([
             'message' => 'Login successful',
             'user' => $user,
@@ -66,8 +70,11 @@ class AuthController extends Controller
      */
     public function logout(Request $request): JsonResponse
     {
-        if ($request->user()) {
-            $request->user()->tokens()->delete();
+        $user = $request->user();
+
+        if ($user) {
+            $user->tokens()->delete();
+            AuditLog::logEvent('logout', $user->email, $request->ip(), $user->id);
         }
 
         $request->session()->invalidate();
@@ -78,12 +85,68 @@ class AuthController extends Controller
         ]);
     }
 
+    // =========================================================================
+    // Register
+    // =========================================================================
+
+    /**
+     * POST /register/request-code
+     */
+    public function registerRequestCode(RegisterRequestCodeRequest $request): JsonResponse
+    {
+        $result = $this->authService->requestRegisterCode(
+            $request->email,
+            $request->name,
+            $request->ip()
+        );
+
+        return response()->json([
+            'message' => $result['message'],
+        ]);
+    }
+
+    /**
+     * POST /register
+     */
+    public function register(RegisterRequest $request): JsonResponse
+    {
+        $result = $this->authService->register(
+            $request->email,
+            $request->name,
+            $request->verification_code,
+            $request->password,
+            $request->ip()
+        );
+
+        if (!$result['success']) {
+            throw ValidationException::withMessages([
+                $result['error'] => [$result['message']],
+            ]);
+        }
+
+        // Auto-login after registration
+        Auth::login($result['user']);
+        $request->session()->regenerate();
+
+        return response()->json([
+            'message' => $result['message'],
+            'user' => $result['user'],
+        ], 201);
+    }
+
+    // =========================================================================
+    // Forgot / Reset Password
+    // =========================================================================
+
     /**
      * POST /forgot-password/request
      */
     public function forgotPasswordRequest(ForgotPasswordRequest $request): JsonResponse
     {
-        $result = $this->authService->requestPasswordResetCode($request->email);
+        $result = $this->authService->requestPasswordResetCode(
+            $request->email,
+            $request->ip()
+        );
 
         return response()->json([
             'message' => $result['message'],
@@ -98,7 +161,8 @@ class AuthController extends Controller
         $result = $this->authService->resetPassword(
             $request->email,
             $request->verification_code,
-            $request->password
+            $request->password,
+            $request->ip()
         );
 
         if (!$result['success']) {
@@ -111,6 +175,10 @@ class AuthController extends Controller
             'message' => $result['message'],
         ]);
     }
+
+    // =========================================================================
+    // Change Password (authenticated)
+    // =========================================================================
 
     /**
      * POST /api/change-password

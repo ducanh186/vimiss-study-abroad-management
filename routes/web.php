@@ -15,6 +15,16 @@ Route::post('/login', [AuthController::class, 'login'])
 Route::post('/logout', [AuthController::class, 'logout'])
     ->middleware('auth:sanctum');
 
+// Registration (student self-register)
+Route::prefix('register')->group(function () {
+    Route::post('/request-code', [AuthController::class, 'registerRequestCode'])
+        ->middleware('throttle:register-request-code');
+
+    Route::post('/', [AuthController::class, 'register'])
+        ->middleware('throttle:register');
+});
+
+// Forgot / Reset password
 Route::prefix('forgot-password')->group(function () {
     Route::post('/request', [AuthController::class, 'forgotPasswordRequest'])
         ->middleware('throttle:forgot-password-request');
