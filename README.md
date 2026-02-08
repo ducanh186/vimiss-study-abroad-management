@@ -15,26 +15,36 @@
 
 ## Quick Start
 
-```bash
-# Clone
-git clone <repo-url>
-cd vimiss-study-abroad-management
+### Option 1: Using Scripts (Recommended for Windows)
 
-# Backend deps
+```bash
+# One command setup + demo
+scripts\quick-demo.bat
+
+# Or step by step:
+scripts\setup.bat    # First time setup
+scripts\dev.bat      # Start dev servers
+```
+
+### Option 2: Manual Setup
+
+```bash
+# Backend
 composer install
 cp .env.example .env
 php artisan key:generate
-touch database/database.sqlite
+touch database/database.sqlite  # or: type nul > database\database.sqlite on Windows
 php artisan migrate --seed
 
-# Frontend deps
+# Frontend
 npm install
-npm run dev
 
-# Serve
-php artisan serve
-# Open http://localhost:8000
+# Run servers (in separate terminals)
+php artisan serve    # http://localhost:8000
+npm run dev          # http://localhost:5173
 ```
+
+See [scripts/README.md](scripts/README.md) for all available scripts.
 
 ## Demo Accounts
 
