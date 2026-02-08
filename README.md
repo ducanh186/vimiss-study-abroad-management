@@ -71,7 +71,7 @@ php artisan view:clear
 │   ├── Http/Controllers/   # AuthController, UserController, ProfileController
 │   ├── Http/Middleware/     # CheckRole, CheckMustChangePassword
 │   ├── Http/Requests/       # Form request validation
-│   ├── Models/              # User, PasswordResetCode
+│   ├── Models/              # User, VerificationCode, AuditLog, MentorProfile
 │   ├── Policies/            # UserPolicy (admin-only CRUD)
 │   ├── Providers/           # AppServiceProvider (rate limiters)
 │   └── Services/            # AuthService (password reset logic)
@@ -151,10 +151,38 @@ php artisan view:clear
 
 - **Phase 0** ✅ Audit + Plan
 - **Phase 1** ✅ Scaffolding + Config
-- **Phase 2** ✅ Auth + Layout + RBAC skeleton
+- **Phase 2** ✅ Auth + Public Landing + i18n + Registration + Forgot/Reset Password
 - **Phase 3** 🔲 Profiles + Assignment (student-mentor)
 - **Phase 4** 🔲 Applications + Documents
 - **Phase 5** 🔲 Approvals + Calendar
+
+## Mail Setup (Development)
+
+The default mail driver is `log`. Verification codes are logged to `storage/logs/laravel.log`.
+
+To use Mailpit for a local SMTP inbox:
+
+```dotenv
+MAIL_MAILER=smtp
+MAIL_HOST=127.0.0.1
+MAIL_PORT=1025
+MAIL_USERNAME=null
+MAIL_PASSWORD=null
+MAIL_ENCRYPTION=null
+```
+
+Then open http://localhost:8025 for the Mailpit web UI.
+
+## Environment Variables
+
+Key `.env` values:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DB_CONNECTION` | `sqlite` | Database driver |
+| `MAIL_MAILER` | `log` | Mail driver (log, smtp, mailpit) |
+| `SANCTUM_STATEFUL_DOMAINS` | `localhost:8000,localhost:5173` | SPA domains for cookie auth |
+| `APP_ENV` | `local` | Environment (local shows codes in logs) |
 
 ## License
 
