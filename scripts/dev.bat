@@ -1,4 +1,5 @@
 @echo off
+cd /d "%~dp0.."
 echo ========================================
 echo Vimiss Study Abroad - Development Mode
 echo ========================================
@@ -16,4 +17,4 @@ REM Wait 2 seconds for Laravel to start
 timeout /t 2 /nobreak >nul
 
 REM Start Vite in current window
-npm run dev
+npx vite

@@ -1,4 +1,5 @@
 @echo off
+cd /d "%~dp0.."
 echo ========================================
 echo Vimiss Study Abroad - Production Build
 echo ========================================
@@ -12,7 +13,7 @@ php artisan view:clear
 
 echo.
 echo [2/3] Building frontend assets...
-call npm run build
+call npx vite build
 if errorlevel 1 (
     echo ERROR: Build failed!
     pause

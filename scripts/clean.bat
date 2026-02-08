@@ -1,4 +1,5 @@
 @echo off
+cd /d "%~dp0.."
 echo ========================================
 echo Vimiss Study Abroad - Clean Cache/Logs
 echo ========================================
