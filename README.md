@@ -15,18 +15,7 @@
 
 ## Quick Start
 
-### Option 1: Using Menu Script (Recommended)
-
-```bash
-# Interactive menu with all options
-vimiss.bat
-
-# Then select:
-# [7] DEMO - Full setup + start servers (one command)
-# or [1] SETUP then [2] DEV
-```
-
-### Option 2: Manual Setup
+### Setup
 
 ```bash
 # Backend
@@ -44,20 +33,24 @@ php artisan serve    # http://localhost:8000
 npx vite            # http://localhost:5173
 ```
 
-The `vimiss.bat` script provides an interactive menu with all development tasks.
+### Development Commands
 
-## Menu Options
+```bash
+# Reset database
+php artisan migrate:fresh --seed
 
-| Option | Description |
-|--------|-------------|
-| **[1] SETUP** | First time setup - install dependencies, create .env, migrate, seed |
-| **[2] DEV** | Start development servers (Laravel + Vite) |
-| **[3] FRESH** | Reset database (drop all + migrate + seed) |
-| **[4] BUILD** | Build production assets |
-| **[5] TEST** | Run PHPUnit tests |
-| **[6] CLEAN** | Clear all caches and logs |
-| **[7] DEMO** | Full setup + start servers (recommended for first run) |
-| **[8] EXIT** | Exit |
+# Build production assets
+npm run build
+
+# Run tests
+php artisan test
+
+# Clear caches
+php artisan cache:clear
+php artisan config:clear
+php artisan route:clear
+php artisan view:clear
+```
 
 ## Demo Accounts
 
@@ -100,12 +93,59 @@ The `vimiss.bat` script provides an interactive menu with all development tasks.
 
 ## RBAC Roles
 
-| Role     | Capabilities                                         |
-|----------|------------------------------------------------------|
-| Admin    | Full access — user CRUD, all modules, settings       |
-| Director | View reports, approve docs, manage mentors/students  |
-| Mentor   | View assigned students, manage applications          |
-| Student  | View own mentor, submit applications, upload docs    |
+### Role Overview
+
+| Role     | Code       | Description                                      |
+|----------|------------|--------------------------------------------------|
+| **Admin**    | `admin`    | System administrator with full access            |
+| **Director** | `director` | Management with oversight and approval authority |
+| **Mentor**   | `mentor`   | Counsellor managing assigned students            |
+| **Student**  | `student`  | End-user with access to own data                 |
+
+### Detailed Capabilities
+
+#### Admin
+- Full system access and configuration
+- User CRUD: create, update roles, deactivate users
+- Access all modules and settings
+- View all students, mentors, and applications
+- System-wide reports and analytics
+
+#### Director
+- Management oversight and reporting
+- View all students and mentors
+- Generate and view system reports
+- Approve/reject documents and applications
+- Assign mentors to students
+- Manage pending approvals
+
+#### Mentor
+- View and manage assigned students only
+- Access own student list
+- View and manage applications of assigned students
+- Update student progress and notes
+- Access calendar for scheduling
+- Update own profile
+
+#### Student
+- View own profile and data
+- View assigned mentor information
+- View and submit own applications
+- Upload required documents
+- Access calendar for deadlines
+- Update own profile
+
+### Permission Highlights
+
+- **Authentication**: All roles can login, logout, change password, and use forgot password (OTP)
+- **Profile Management**: All users can view and edit their own profile
+- **User Management**: Only Admin can create, update roles, and deactivate users
+- **Student-Mentor Assignment**: Only Admin and Director can assign mentors to students
+- **Approvals**: Only Admin and Director can approve/reject documents and applications
+- **Reports**: Only Admin and Director have access to system reports
+- **Scope Restrictions**: 
+  - Mentors can only access students assigned to them
+  - Students can only view their assigned mentor and their own data
 
 ## Phases
 
