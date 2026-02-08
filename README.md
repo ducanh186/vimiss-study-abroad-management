@@ -15,15 +15,15 @@
 
 ## Quick Start
 
-### Option 1: Using Scripts (Recommended for Windows)
+### Option 1: Using Menu Script (Recommended)
 
 ```bash
-# One command setup + demo
-scripts\quick-demo.bat
+# Interactive menu with all options
+vimiss.bat
 
-# Or step by step:
-scripts\setup.bat    # First time setup
-scripts\dev.bat      # Start dev servers
+# Then select:
+# [7] DEMO - Full setup + start servers (one command)
+# or [1] SETUP then [2] DEV
 ```
 
 ### Option 2: Manual Setup
@@ -33,7 +33,7 @@ scripts\dev.bat      # Start dev servers
 composer install
 cp .env.example .env
 php artisan key:generate
-touch database/database.sqlite  # or: type nul > database\database.sqlite on Windows
+type nul > database\database.sqlite
 php artisan migrate --seed
 
 # Frontend
@@ -41,10 +41,23 @@ npm install
 
 # Run servers (in separate terminals)
 php artisan serve    # http://localhost:8000
-npm run dev          # http://localhost:5173
+npx vite            # http://localhost:5173
 ```
 
-See [scripts/README.md](scripts/README.md) for all available scripts.
+The `vimiss.bat` script provides an interactive menu with all development tasks.
+
+## Menu Options
+
+| Option | Description |
+|--------|-------------|
+| **[1] SETUP** | First time setup - install dependencies, create .env, migrate, seed |
+| **[2] DEV** | Start development servers (Laravel + Vite) |
+| **[3] FRESH** | Reset database (drop all + migrate + seed) |
+| **[4] BUILD** | Build production assets |
+| **[5] TEST** | Run PHPUnit tests |
+| **[6] CLEAN** | Clear all caches and logs |
+| **[7] DEMO** | Full setup + start servers (recommended for first run) |
+| **[8] EXIT** | Exit |
 
 ## Demo Accounts
 
