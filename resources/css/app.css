@@ -7,20 +7,20 @@
  * ============================================================================ */
 
 :root {
-    /* Primary - Deep Navy Blue (educational, trustworthy) */
-    --color-primary: #1e3a5f;
-    --color-primary-light: #2d5a8e;
-    --color-primary-dark: #0f2340;
-    --color-primary-hover: #2d5a8e;
+    /* Primary - Deep Purple (educational, modern) */
+    --color-primary: #6d28d9;
+    --color-primary-light: #8b5cf6;
+    --color-primary-dark: #4c1d95;
+    --color-primary-hover: #7c3aed;
 
-    /* Accent - Teal / Sky Blue */
-    --color-accent: #0ea5e9;
-    --color-accent-light: #38bdf8;
-    --color-accent-dark: #0284c7;
+    /* Accent - Violet / Indigo */
+    --color-accent: #8b5cf6;
+    --color-accent-light: #a78bfa;
+    --color-accent-dark: #6d28d9;
 
-    /* CTA - Coral gradient (from riba.vn) */
-    --color-cta-start: #ff0766;
-    --color-cta-end: #ff7e5d;
+    /* CTA - Purple to Pink gradient */
+    --color-cta-start: #7c3aed;
+    --color-cta-end: #ec4899;
 
     /* Semantic */
     --color-success: #22c55e;
@@ -117,6 +117,14 @@ body {
     font-weight: 600;
     color: var(--color-text);
     margin-bottom: 0.5rem;
+}
+
+.login-auth-header {
+    margin-bottom: 1rem;
+}
+
+.login-auth-title {
+    margin-top: 0;
 }
 
 .auth-description {
@@ -937,4 +945,429 @@ body {
     font-weight: 600;
     color: var(--color-text);
     margin-bottom: 0.5rem;
+}
+
+/* ============================================================================
+ * CTA & Outline-Light Buttons
+ * ============================================================================ */
+
+.btn-cta {
+    background: linear-gradient(135deg, var(--color-cta-start) 0%, var(--color-cta-end) 100%);
+    color: #fff;
+    font-weight: 700;
+    box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);
+}
+
+.btn-cta:hover:not(:disabled) {
+    box-shadow: 0 6px 20px rgba(124, 58, 237, 0.5);
+    transform: translateY(-1px);
+}
+
+.btn-outline-light {
+    background: transparent;
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    color: #fff;
+}
+
+.btn-outline-light:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: #fff;
+}
+
+/* ============================================================================
+ * Auth Two-Column Layout (Login)
+ * ============================================================================ */
+
+.auth-layout-two-col {
+    display: flex;
+    min-height: 100vh;
+}
+
+.auth-panel-left {
+    flex: 1;
+    background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 40%, var(--color-primary-light) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.auth-panel-left::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 30% 70%, rgba(139, 92, 246, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 70% 30%, rgba(236, 72, 153, 0.15) 0%, transparent 50%);
+    pointer-events: none;
+}
+
+.auth-panel-left-content {
+    position: relative;
+    z-index: 1;
+    max-width: 480px;
+    color: #fff;
+}
+
+.auth-panel-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 2.5rem;
+    text-decoration: none;
+}
+
+.auth-panel-left-title {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.3;
+    margin-bottom: 1rem;
+    color: #fff;
+}
+
+.auth-panel-left-subtitle {
+    font-size: 1.05rem;
+    color: rgba(255, 255, 255, 0.8);
+    line-height: 1.6;
+    margin-bottom: 2rem;
+}
+
+.auth-panel-left-features {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.auth-panel-feature {
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.auth-panel-right {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background: var(--color-bg);
+    position: relative;
+}
+
+.auth-card-inner {
+    width: 100%;
+    max-width: 420px;
+    position: relative;
+}
+
+.auth-lang-toggle {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 900px) {
+    .auth-layout-two-col {
+        flex-direction: column;
+    }
+
+    .auth-panel-left {
+        min-height: 200px;
+        padding: 2rem;
+    }
+
+    .auth-panel-left-title {
+        font-size: 1.5rem;
+    }
+
+    .auth-panel-left-features {
+        display: none;
+    }
+}
+
+/* ============================================================================
+ * Landing Page
+ * ============================================================================ */
+
+.landing-page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* --- Navbar --- */
+.landing-nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(76, 29, 149, 0.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.landing-nav-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.landing-nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.landing-brand-text {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.025em;
+}
+
+.landing-nav-links {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.landing-nav-link {
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.landing-nav-link:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+@media (max-width: 768px) {
+    .landing-nav-links {
+        gap: 0;
+    }
+
+    .landing-nav-link {
+        display: none;
+    }
+}
+
+/* --- Hero --- */
+.landing-hero {
+    background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 50%, var(--color-primary-light) 100%);
+    padding: 6rem 1.5rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.landing-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 20% 80%, rgba(236, 72, 153, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.2) 0%, transparent 50%);
+    pointer-events: none;
+}
+
+.landing-hero-content {
+    position: relative;
+    z-index: 1;
+    max-width: 720px;
+    margin: 0 auto;
+}
+
+.landing-hero-title {
+    font-size: 3rem;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1.15;
+    margin-bottom: 1.25rem;
+    letter-spacing: -0.025em;
+}
+
+.landing-hero-subtitle {
+    font-size: 1.125rem;
+    color: rgba(255, 255, 255, 0.85);
+    line-height: 1.7;
+    margin-bottom: 2.5rem;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.landing-hero-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+    .landing-hero {
+        padding: 3.5rem 1rem;
+    }
+
+    .landing-hero-title {
+        font-size: 2rem;
+    }
+
+    .landing-hero-subtitle {
+        font-size: 1rem;
+    }
+}
+
+/* --- Sections --- */
+.landing-section {
+    padding: 5rem 1.5rem;
+}
+
+.landing-section-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.landing-section-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--color-text);
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.landing-section-dark {
+    background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%);
+}
+
+/* --- Features Grid --- */
+.landing-features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+}
+
+.landing-feature-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    padding: 2rem 1.5rem;
+    text-align: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.landing-feature-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(109, 40, 217, 0.1);
+}
+
+.landing-feature-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+.landing-feature-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: 0.5rem;
+}
+
+.landing-feature-desc {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+}
+
+/* --- Stats Grid --- */
+.landing-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 2rem;
+    text-align: center;
+}
+
+.landing-stat-item {
+    padding: 1.5rem;
+}
+
+.landing-stat-value {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 0.25rem;
+}
+
+.landing-stat-label {
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+/* --- CTA Section --- */
+.landing-cta-section {
+    background: var(--color-bg);
+}
+
+.landing-cta-desc {
+    font-size: 1rem;
+    color: var(--color-text-secondary);
+    margin-bottom: 2rem;
+    max-width: 520px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* --- Footer --- */
+.landing-footer {
+    background: var(--color-primary-dark);
+    padding: 3rem 1.5rem 0;
+}
+
+.landing-footer-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 2rem;
+    padding-bottom: 2rem;
+}
+
+.landing-footer-col h4 {
+    color: #fff;
+    margin-bottom: 0.75rem;
+}
+
+.landing-footer-link {
+    color: rgba(255, 255, 255, 0.65);
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: color 0.2s;
+}
+
+.landing-footer-link:hover {
+    color: #fff;
+}
+
+.landing-footer-bottom {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+    padding: 1.25rem 0;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.8125rem;
+}
+
+@media (max-width: 768px) {
+    .landing-footer-inner {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
 }
