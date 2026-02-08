@@ -103,7 +103,7 @@ const ProtectedRoute = ({ children }) => {
     const { user, loading } = useAuth();
     const location = useLocation();
     if (loading) return <LoadingScreen />;
-    if (!user) return <Navigate to="/login" state={{ from: location }} replace />;
+    if (!user) return <Navigate to="/auth/login" state={{ from: location }} replace />;
     return children;
 };
 
@@ -118,7 +118,7 @@ const RoleRoute = ({ children, roles }) => {
     const { user, loading } = useAuth();
     const location = useLocation();
     if (loading) return <LoadingScreen />;
-    if (!user) return <Navigate to="/login" state={{ from: location }} replace />;
+    if (!user) return <Navigate to="/auth/login" state={{ from: location }} replace />;
     if (!roles.includes(user.role)) return <Navigate to="/dashboard" replace />;
     return children;
 };
@@ -132,6 +132,767 @@ const LoadingScreen = () => (
         <p>Loading...</p>
     </div>
 );
+
+// ============================================================================
+// OTP Input Component (shared)
+// ============================================================================
+const OtpInput = ({ value, onChange, disabled, error }) => {
+    const refs = [useRef(null), useRef(null), useRef(null), useRef(null), useRef(null), useRef(null)];
+
+    const handleChange = (index, val) => {
+        const digit = val.replace(/\D/g, '').slice(-1);
+        const newCode = [...value];
+        newCode[index] = digit;
+        onChange(newCode);
+        if (digit && index < 5) refs[index + 1].current?.focus();
+    };
+
+    const handleKeyDown = (index, e) => {
+        if (e.key === 'Backspace' && !value[index] && index > 0) {
+            refs[index - 1].current?.focus();
+        }
+    };
+
+    const handlePaste = (e) => {
+        e.preventDefault();
+        const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+        const newCode = [...value];
+        for (let i = 0; i < 6; i++) newCode[i] = pasted[i] || '';
+        onChange(newCode);
+        refs[Math.min(pasted.length, 5)].current?.focus();
+    };
+
+    return (
+        <div className="otp-container" onPaste={handlePaste}>
+            {value.map((digit, i) => (
+                <input key={i} ref={refs[i]} type="text" inputMode="numeric" maxLength={1}
+                    className={`otp-input ${error ? 'otp-error' : ''}`}
+                    value={digit} onChange={e => handleChange(i, e.target.value)}
+                    onKeyDown={e => handleKeyDown(i, e)} disabled={disabled} />
+            ))}
+        </div>
+    );
+};
+
+// ============================================================================
+// Landing Page (Public)
+// ============================================================================
+const LandingPage = () => {
+    const { t, locale, setLocale } = useI18n();
+    const { user } = useAuth();
+
+    return (
+        <div className="landing-page">
+            {/* Navbar */}
+            <nav className="landing-nav">
+                <div className="landing-nav-inner">
+                    <div className="landing-nav-brand">
+                        <div className="sidebar-logo-icon" style={{ width: 36, height: 36, fontSize: '0.9rem' }}>V</div>
+                        <span className="landing-brand-text">Vimiss</span>
+                    </div>
+                    <div className="landing-nav-links">
+                        <a href="#features" className="landing-nav-link">{t('landing.navAbout')}</a>
+                        <a href="#stats" className="landing-nav-link">{t('landing.navServices')}</a>
+                        <a href="#contact" className="landing-nav-link">{t('landing.navContact')}</a>
+                        <div className="lang-switcher" style={{ marginLeft: '0.5rem' }}>
+                            <button className={`lang-btn ${locale === 'vi' ? 'active' : ''}`} onClick={() => setLocale('vi')}>VI</button>
+                            <button className={`lang-btn ${locale === 'en' ? 'active' : ''}`} onClick={() => setLocale('en')}>EN</button>
+                        </div>
+                        {user ? (
+                            <Link to="/dashboard" className="btn btn-primary btn-sm" style={{ marginLeft: '0.5rem' }}>Dashboard</Link>
+                        ) : (
+                            <>
+                                <Link to="/auth/login" className="btn btn-outline-light btn-sm" style={{ marginLeft: '0.5rem' }}>{t('landing.ctaLogin')}</Link>
+                                <Link to="/auth/register" className="btn btn-cta btn-sm" style={{ marginLeft: '0.5rem' }}>{t('landing.ctaRegister')}</Link>
+                            </>
+                        )}
+                    </div>
+                </div>
+            </nav>
+
+            {/* Hero */}
+            <section className="landing-hero">
+                <div className="landing-hero-content">
+                    <h1 className="landing-hero-title">{t('landing.heroTitle')}</h1>
+                    <p className="landing-hero-subtitle">{t('landing.heroSubtitle')}</p>
+                    <div className="landing-hero-actions">
+                        <Link to="/auth/register" className="btn btn-cta btn-lg">{t('landing.ctaRegister')}</Link>
+                        <Link to="/auth/login" className="btn btn-outline-light btn-lg">{t('landing.ctaLogin')}</Link>
+                    </div>
+                </div>
+            </section>
+
+            {/* Features */}
+            <section id="features" className="landing-section">
+                <div className="landing-section-inner">
+                    <h2 className="landing-section-title">{t('landing.featuresTitle')}</h2>
+                    <div className="landing-features-grid">
+                        {[
+                            { icon: '🎓', title: t('landing.feature1Title'), desc: t('landing.feature1Desc') },
+                            { icon: '📋', title: t('landing.feature2Title'), desc: t('landing.feature2Desc') },
+                            { icon: '🤝', title: t('landing.feature3Title'), desc: t('landing.feature3Desc') },
+                            { icon: '🌍', title: t('landing.feature4Title'), desc: t('landing.feature4Desc') },
+                        ].map((f, i) => (
+                            <div key={i} className="landing-feature-card">
+                                <div className="landing-feature-icon">{f.icon}</div>
+                                <h3 className="landing-feature-title">{f.title}</h3>
+                                <p className="landing-feature-desc">{f.desc}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* Stats */}
+            <section id="stats" className="landing-section landing-section-dark">
+                <div className="landing-section-inner">
+                    <h2 className="landing-section-title" style={{ color: '#fff' }}>{t('landing.statsTitle')}</h2>
+                    <div className="landing-stats-grid">
+                        {[
+                            { value: '2,000+', label: t('landing.statStudents') },
+                            { value: '150+', label: t('landing.statUniversities') },
+                            { value: '30+', label: t('landing.statCountries') },
+                            { value: '95%', label: t('landing.statSuccessRate') },
+                        ].map((s, i) => (
+                            <div key={i} className="landing-stat-item">
+                                <div className="landing-stat-value">{s.value}</div>
+                                <div className="landing-stat-label">{s.label}</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* CTA */}
+            <section className="landing-section landing-cta-section">
+                <div className="landing-section-inner" style={{ textAlign: 'center' }}>
+                    <h2 className="landing-section-title">{t('landing.ctaTitle')}</h2>
+                    <p className="landing-cta-desc">{t('landing.ctaDesc')}</p>
+                    <Link to="/auth/register" className="btn btn-cta btn-lg">{t('landing.ctaButton')}</Link>
+                </div>
+            </section>
+
+            {/* Footer */}
+            <footer id="contact" className="landing-footer">
+                <div className="landing-footer-inner">
+                    <div className="landing-footer-col">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                            <div className="sidebar-logo-icon" style={{ width: 32, height: 32, fontSize: '0.85rem' }}>V</div>
+                            <span style={{ fontWeight: 700, fontSize: '1.25rem', color: '#fff' }}>Vimiss</span>
+                        </div>
+                        <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.875rem', lineHeight: 1.6 }}>{t('landing.footerDesc')}</p>
+                    </div>
+                    <div className="landing-footer-col">
+                        <h4 style={{ color: '#fff', marginBottom: '0.75rem' }}>{t('landing.footerQuickLinks')}</h4>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            <a href="#features" className="landing-footer-link">{t('landing.navAbout')}</a>
+                            <a href="#stats" className="landing-footer-link">{t('landing.navServices')}</a>
+                            <Link to="/auth/login" className="landing-footer-link">{t('landing.ctaLogin')}</Link>
+                            <Link to="/auth/register" className="landing-footer-link">{t('landing.ctaRegister')}</Link>
+                        </div>
+                    </div>
+                    <div className="landing-footer-col">
+                        <h4 style={{ color: '#fff', marginBottom: '0.75rem' }}>{t('landing.footerContact')}</h4>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', color: 'rgba(255,255,255,0.7)', fontSize: '0.875rem' }}>
+                            <span>📧 contact@vimiss.vn</span>
+                            <span>📞 (+84) 28 1234 5678</span>
+                            <span>📍 TP. Hồ Chí Minh, Việt Nam</span>
+                        </div>
+                    </div>
+                </div>
+                <div className="landing-footer-bottom">
+                    <p>{t('landing.footerRights')}</p>
+                </div>
+            </footer>
+        </div>
+    );
+};
+
+// ============================================================================
+// Auth Layout (two-column for Login; single card for others)
+// ============================================================================
+const AuthLayout = ({ children, twoColumn = false }) => {
+    const { t } = useI18n();
+
+    if (twoColumn) {
+        return (
+            <div className="auth-layout-two-col">
+                <div className="auth-panel-left">
+                    <div className="auth-panel-left-content">
+                        <Link to="/" className="auth-panel-brand">
+                            <div className="sidebar-logo-icon" style={{ width: 48, height: 48, fontSize: '1.2rem' }}>V</div>
+                            <span style={{ fontSize: '2rem', fontWeight: 700, color: '#fff' }}>Vimiss</span>
+                        </Link>
+                        <h2 className="auth-panel-left-title">{t('landing.heroTitle')}</h2>
+                        <p className="auth-panel-left-subtitle">{t('landing.heroSubtitle')}</p>
+                        <div className="auth-panel-left-features">
+                            <div className="auth-panel-feature">✅ {t('landing.feature1Title')}</div>
+                            <div className="auth-panel-feature">✅ {t('landing.feature2Title')}</div>
+                            <div className="auth-panel-feature">✅ {t('landing.feature3Title')}</div>
+                        </div>
+                    </div>
+                </div>
+                <div className="auth-panel-right">
+                    <div className="auth-card-inner">
+                        {children}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="auth-layout">
+            <div className="auth-card">
+                <div className="auth-header auth-header-logo">
+                    <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center', textDecoration: 'none' }}>
+                        <div className="sidebar-logo-icon" style={{ width: 40, height: 40, fontSize: '1rem' }}>V</div>
+                        <span className="auth-logo-text">Vimiss</span>
+                    </Link>
+                </div>
+                {children}
+            </div>
+        </div>
+    );
+};
+
+// ============================================================================
+// Login Page (two-column layout)
+// ============================================================================
+const LoginPage = () => {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [error, setError] = useState(null);
+    const [fieldErrors, setFieldErrors] = useState({});
+    const [isLoading, setIsLoading] = useState(false);
+    const { login } = useAuth();
+    const { t, locale, setLocale } = useI18n();
+    const navigate = useNavigate();
+    const emailRef = useRef(null);
+    const passwordRef = useRef(null);
+
+    const validate = () => {
+        const errors = {};
+        if (!email.trim()) {
+            errors.email = t('auth.emailRequired');
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            errors.email = t('auth.emailInvalid');
+        }
+        if (!password) {
+            errors.password = t('auth.passwordRequired');
+        }
+        setFieldErrors(errors);
+        if (errors.email) emailRef.current?.focus();
+        else if (errors.password) passwordRef.current?.focus();
+        return Object.keys(errors).length === 0;
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError(null);
+        setFieldErrors({});
+        if (!validate()) return;
+
+        setIsLoading(true);
+        try {
+            await login(email, password);
+            navigate('/dashboard');
+        } catch (err) {
+            const errors = err.response?.data?.errors;
+            if (errors?.email) {
+                setFieldErrors({ email: errors.email[0] });
+                emailRef.current?.focus();
+            } else {
+                setError(err.response?.data?.message || t('auth.loginFailed'));
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleFieldChange = (field, value, setter) => {
+        setter(value);
+        if (fieldErrors[field]) setFieldErrors(prev => ({ ...prev, [field]: null }));
+        if (error) setError(null);
+    };
+
+    return (
+        <AuthLayout twoColumn>
+            <div className="auth-lang-toggle">
+                <button className={`lang-btn ${locale === 'vi' ? 'active' : ''}`} onClick={() => setLocale('vi')}>VI</button>
+                <button className={`lang-btn ${locale === 'en' ? 'active' : ''}`} onClick={() => setLocale('en')}>EN</button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="auth-form">
+                <h2 className="auth-title text-center">{t('auth.welcomeBack')}</h2>
+                <p className="auth-description">{t('auth.loginDesc')}</p>
+
+                {error && <div className="alert alert-error mb-4">{error}</div>}
+
+                <div className="form-group">
+                    <label htmlFor="email">{t('auth.emailAddress')} <span className="text-error">*</span></label>
+                    <input
+                        ref={emailRef}
+                        id="email"
+                        type="email"
+                        className={`form-input ${fieldErrors.email ? 'form-input-error' : ''}`}
+                        value={email}
+                        onChange={e => handleFieldChange('email', e.target.value, setEmail)}
+                        placeholder={t('auth.enterEmail')}
+                        autoFocus
+                        disabled={isLoading}
+                    />
+                    {fieldErrors.email && <p className="form-error-text">{fieldErrors.email}</p>}
+                </div>
+
+                <div className="form-group">
+                    <label htmlFor="password">{t('auth.password')} <span className="text-error">*</span></label>
+                    <div className="form-input-wrapper">
+                        <input
+                            ref={passwordRef}
+                            id="password"
+                            type={showPassword ? 'text' : 'password'}
+                            className={`form-input ${fieldErrors.password ? 'form-input-error' : ''}`}
+                            value={password}
+                            onChange={e => handleFieldChange('password', e.target.value, setPassword)}
+                            placeholder={t('auth.enterPassword')}
+                            disabled={isLoading}
+                        />
+                        <button
+                            type="button"
+                            className="form-toggle-password"
+                            onClick={() => setShowPassword(!showPassword)}
+                            tabIndex={-1}
+                        >
+                            {showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
+                        </button>
+                    </div>
+                    {fieldErrors.password && <p className="form-error-text">{fieldErrors.password}</p>}
+                </div>
+
+                <button type="submit" className="btn btn-primary btn-block mb-4" disabled={isLoading}>
+                    {isLoading ? (
+                        <><span className="btn-spinner"></span> {t('auth.sending')}</>
+                    ) : t('auth.loginButton')}
+                </button>
+
+                <div className="auth-links">
+                    <Link to="/auth/forgot-password" className="text-sm text-primary">{t('auth.forgotPassword')}</Link>
+                    <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                        {t('auth.dontHaveAccount')} <Link to="/auth/register" className="text-primary">{t('auth.register')}</Link>
+                    </span>
+                </div>
+            </form>
+        </AuthLayout>
+    );
+};
+
+// ============================================================================
+// Register Page (2-step: request code → fill form)
+// ============================================================================
+const RegisterPage = () => {
+    const [step, setStep] = useState(1);
+    const [email, setEmail] = useState('');
+    const [name, setName] = useState('');
+    const [verificationCode, setVerificationCode] = useState(['', '', '', '', '', '']);
+    const [password, setPassword] = useState('');
+    const [passwordConfirmation, setPasswordConfirmation] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [error, setError] = useState(null);
+    const [fieldErrors, setFieldErrors] = useState({});
+    const [isLoading, setIsLoading] = useState(false);
+    const [successMessage, setSuccessMessage] = useState(null);
+    const [countdown, setCountdown] = useState(0);
+    const { t, locale, setLocale } = useI18n();
+    const { login } = useAuth();
+    const navigate = useNavigate();
+
+    const emailRef = useRef(null);
+    const nameRef = useRef(null);
+    const passwordRef = useRef(null);
+    const confirmPasswordRef = useRef(null);
+
+    useEffect(() => {
+        if (countdown > 0) {
+            const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [countdown]);
+
+    const handleRequestCode = async (e) => {
+        e.preventDefault();
+        setError(null);
+        setFieldErrors({});
+        const errors = {};
+        if (!name.trim()) errors.name = t('auth.nameRequired');
+        if (!email.trim()) errors.email = t('auth.emailRequired');
+        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = t('auth.emailInvalid');
+        if (Object.keys(errors).length) {
+            setFieldErrors(errors);
+            if (errors.name) nameRef.current?.focus();
+            else emailRef.current?.focus();
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            await axios.get('/sanctum/csrf-cookie');
+            await axios.post('/register/request-code', { email, name });
+        } catch (err) { /* generic message */ }
+        setSuccessMessage(t('auth.invitationCodeSent'));
+        setStep(2);
+        setCountdown(60);
+        setIsLoading(false);
+    };
+
+    const handleRegister = async (e) => {
+        e.preventDefault();
+        setError(null);
+        setFieldErrors({});
+        const errors = {};
+        const codeString = verificationCode.join('');
+        if (codeString.length !== 6) errors.verificationCode = t('auth.codeRequired');
+        if (!password) errors.password = t('auth.passwordRequired');
+        else if (password.length < 8) errors.password = t('auth.passwordTooShort');
+        if (!passwordConfirmation) errors.passwordConfirmation = t('auth.confirmPasswordRequired');
+        else if (password !== passwordConfirmation) {
+            errors.passwordConfirmation = t('auth.passwordMismatch');
+            errors.password = t('auth.passwordMismatch');
+        }
+        if (Object.keys(errors).length) {
+            setFieldErrors(errors);
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            await axios.post('/register', {
+                email,
+                name,
+                verification_code: codeString,
+                password,
+                password_confirmation: passwordConfirmation,
+            });
+            // Auto-login was handled server-side, fetch user
+            setSuccessMessage(t('auth.registerSuccess'));
+            // Small delay so user sees success
+            setTimeout(() => {
+                window.location.href = '/dashboard';
+            }, 1000);
+        } catch (err) {
+            const errs = err.response?.data?.errors;
+            if (errs?.verification_code) {
+                setFieldErrors({ verificationCode: errs.verification_code[0] });
+            } else if (errs?.email) {
+                setFieldErrors({ email: errs.email[0] });
+            } else if (errs?.password) {
+                setFieldErrors({ password: errs.password[0] });
+            } else {
+                setError(err.response?.data?.message || t('auth.registerFailed'));
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleResendCode = async () => {
+        if (countdown > 0 || isLoading) return;
+        setIsLoading(true);
+        try { await axios.post('/register/request-code', { email, name }); } catch (err) { /* ignore */ }
+        setSuccessMessage(t('auth.verificationCodeResent'));
+        setCountdown(60);
+        setIsLoading(false);
+    };
+
+    return (
+        <AuthLayout>
+            <div className="auth-lang-toggle" style={{ position: 'absolute', top: '1rem', right: '1rem' }}>
+                <button className={`lang-btn ${locale === 'vi' ? 'active' : ''}`} onClick={() => setLocale('vi')}>VI</button>
+                <button className={`lang-btn ${locale === 'en' ? 'active' : ''}`} onClick={() => setLocale('en')}>EN</button>
+            </div>
+
+            {step === 1 ? (
+                <form onSubmit={handleRequestCode} className="auth-form">
+                    <h2 className="auth-title text-center">{t('auth.registerTitle')}</h2>
+                    <p className="auth-description">{t('auth.registerDesc')}</p>
+                    {error && <div className="alert alert-error mb-4">{error}</div>}
+
+                    <div className="form-group">
+                        <label htmlFor="name">{t('auth.fullName')} <span className="text-error">*</span></label>
+                        <input ref={nameRef} id="name" type="text"
+                            className={`form-input ${fieldErrors.name ? 'form-input-error' : ''}`}
+                            value={name} onChange={e => { setName(e.target.value); if (fieldErrors.name) setFieldErrors(prev => ({ ...prev, name: null })); }}
+                            placeholder={t('auth.enterFullName')} autoFocus disabled={isLoading} />
+                        {fieldErrors.name && <p className="form-error-text">{fieldErrors.name}</p>}
+                    </div>
+
+                    <div className="form-group">
+                        <label htmlFor="reg-email">{t('auth.emailAddress')} <span className="text-error">*</span></label>
+                        <input ref={emailRef} id="reg-email" type="email"
+                            className={`form-input ${fieldErrors.email ? 'form-input-error' : ''}`}
+                            value={email} onChange={e => { setEmail(e.target.value); if (fieldErrors.email) setFieldErrors(prev => ({ ...prev, email: null })); }}
+                            placeholder={t('auth.enterEmail')} disabled={isLoading} />
+                        {fieldErrors.email && <p className="form-error-text">{fieldErrors.email}</p>}
+                    </div>
+
+                    <button type="submit" className="btn btn-primary btn-block mb-4" disabled={isLoading}>
+                        {isLoading ? <><span className="btn-spinner"></span> {t('auth.sending')}</> : t('auth.sendInvitationCode')}
+                    </button>
+
+                    <div className="auth-links">
+                        <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                            {t('auth.alreadyHaveAccount')} <Link to="/auth/login" className="text-primary">{t('auth.login')}</Link>
+                        </span>
+                    </div>
+                </form>
+            ) : (
+                <form onSubmit={handleRegister} className="auth-form">
+                    <h2 className="auth-title text-center">{t('auth.registerTitle')}</h2>
+                    {successMessage && <div className="alert alert-success mb-4">{successMessage}</div>}
+                    {error && <div className="alert alert-error mb-4">{error}</div>}
+
+                    <div className="form-group">
+                        <label>{t('auth.verificationCode')} <span className="text-error">*</span></label>
+                        <p className="text-sm" style={{ color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>{t('auth.enterInvitationCode')}</p>
+                        <OtpInput value={verificationCode} onChange={(newCode) => { setVerificationCode(newCode); if (fieldErrors.verificationCode) setFieldErrors(prev => ({ ...prev, verificationCode: null })); }}
+                            disabled={isLoading} error={!!fieldErrors.verificationCode} />
+                        {fieldErrors.verificationCode && <p className="form-error-text text-center">{fieldErrors.verificationCode}</p>}
+                        <div className="text-center mt-2">
+                            <button type="button" className="btn btn-ghost btn-sm" onClick={handleResendCode} disabled={countdown > 0 || isLoading}>
+                                {countdown > 0 ? t('auth.resendIn', { seconds: countdown }) : t('auth.resendCode')}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="form-group">
+                        <label htmlFor="reg-password">{t('auth.newPassword')} <span className="text-error">*</span></label>
+                        <div className="form-input-wrapper">
+                            <input ref={passwordRef} id="reg-password" type={showPassword ? 'text' : 'password'}
+                                className={`form-input ${fieldErrors.password ? 'form-input-error' : ''}`}
+                                value={password} onChange={e => { setPassword(e.target.value); if (fieldErrors.password) setFieldErrors(prev => ({ ...prev, password: null })); }}
+                                disabled={isLoading} />
+                            <button type="button" className="form-toggle-password" onClick={() => setShowPassword(!showPassword)} tabIndex={-1}>
+                                {showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
+                            </button>
+                        </div>
+                        {fieldErrors.password && <p className="form-error-text">{fieldErrors.password}</p>}
+                    </div>
+
+                    <div className="form-group">
+                        <label htmlFor="reg-confirm-password">{t('auth.confirmPassword')} <span className="text-error">*</span></label>
+                        <div className="form-input-wrapper">
+                            <input ref={confirmPasswordRef} id="reg-confirm-password" type={showConfirmPassword ? 'text' : 'password'}
+                                className={`form-input ${fieldErrors.passwordConfirmation ? 'form-input-error' : ''}`}
+                                value={passwordConfirmation} onChange={e => { setPasswordConfirmation(e.target.value); if (fieldErrors.passwordConfirmation) setFieldErrors(prev => ({ ...prev, passwordConfirmation: null })); }}
+                                disabled={isLoading} />
+                            <button type="button" className="form-toggle-password" onClick={() => setShowConfirmPassword(!showConfirmPassword)} tabIndex={-1}>
+                                {showConfirmPassword ? t('auth.hidePassword') : t('auth.showPassword')}
+                            </button>
+                        </div>
+                        {fieldErrors.passwordConfirmation && <p className="form-error-text">{fieldErrors.passwordConfirmation}</p>}
+                    </div>
+
+                    <button type="submit" className="btn btn-primary btn-block mb-4" disabled={isLoading}>
+                        {isLoading ? <><span className="btn-spinner"></span> {t('auth.registering')}</> : t('auth.registerButton')}
+                    </button>
+                    <div className="auth-links">
+                        <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                            {t('auth.alreadyHaveAccount')} <Link to="/auth/login" className="text-primary">{t('auth.login')}</Link>
+                        </span>
+                    </div>
+                </form>
+            )}
+        </AuthLayout>
+    );
+};
+
+// ============================================================================
+// Forgot Password Page (2-step)
+// ============================================================================
+const ForgotPasswordPage = () => {
+    const [step, setStep] = useState(1);
+    const [email, setEmail] = useState('');
+    const [verificationCode, setVerificationCode] = useState(['', '', '', '', '', '']);
+    const [password, setPassword] = useState('');
+    const [passwordConfirmation, setPasswordConfirmation] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [error, setError] = useState(null);
+    const [fieldErrors, setFieldErrors] = useState({});
+    const [isLoading, setIsLoading] = useState(false);
+    const [successMessage, setSuccessMessage] = useState(null);
+    const [countdown, setCountdown] = useState(0);
+    const { t } = useI18n();
+    const navigate = useNavigate();
+
+    const emailRef = useRef(null);
+    const passwordRef = useRef(null);
+    const confirmPasswordRef = useRef(null);
+
+    useEffect(() => {
+        if (countdown > 0) {
+            const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [countdown]);
+
+    const handleRequestCode = async (e) => {
+        e.preventDefault();
+        setError(null);
+        setFieldErrors({});
+        const errors = {};
+        if (!email.trim()) errors.email = t('auth.emailRequired');
+        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = t('auth.emailInvalid');
+        if (Object.keys(errors).length) {
+            setFieldErrors(errors);
+            emailRef.current?.focus();
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            await axios.get('/sanctum/csrf-cookie');
+            await axios.post('/forgot-password/request', { email });
+        } catch (err) { /* ignore - generic message */ }
+        setSuccessMessage(t('auth.codeSentGeneric'));
+        setStep(2);
+        setCountdown(60);
+        setIsLoading(false);
+    };
+
+    const handleResetPassword = async (e) => {
+        e.preventDefault();
+        setError(null);
+        setFieldErrors({});
+        const errors = {};
+        const codeString = verificationCode.join('');
+        if (codeString.length !== 6) errors.verificationCode = t('auth.codeRequired');
+        if (!password) errors.password = t('auth.passwordRequired');
+        else if (password.length < 8) errors.password = t('auth.passwordTooShort');
+        if (!passwordConfirmation) errors.passwordConfirmation = t('auth.confirmPasswordRequired');
+        else if (password !== passwordConfirmation) {
+            errors.passwordConfirmation = t('auth.passwordMismatch');
+            errors.password = t('auth.passwordMismatch');
+        }
+        if (Object.keys(errors).length) {
+            setFieldErrors(errors);
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            const response = await axios.post('/forgot-password/reset', {
+                email,
+                verification_code: codeString,
+                password,
+                password_confirmation: passwordConfirmation,
+            });
+            setSuccessMessage(response.data.message || t('auth.passwordResetSuccess'));
+            setTimeout(() => navigate('/auth/login'), 2000);
+        } catch (err) {
+            const errs = err.response?.data?.errors;
+            if (errs?.verification_code) {
+                setFieldErrors({ verificationCode: errs.verification_code[0] });
+            } else if (errs?.password) {
+                setFieldErrors({ password: errs.password[0] });
+            } else {
+                setError(err.response?.data?.message || t('auth.failedToResetPassword'));
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleResendCode = async () => {
+        if (countdown > 0 || isLoading) return;
+        setIsLoading(true);
+        try { await axios.post('/forgot-password/request', { email }); } catch (err) { /* ignore */ }
+        setSuccessMessage(t('auth.verificationCodeResent'));
+        setCountdown(60);
+        setIsLoading(false);
+    };
+
+    return (
+        <AuthLayout>
+            {step === 1 ? (
+                <form onSubmit={handleRequestCode} className="auth-form">
+                    <h2 className="auth-title text-center">{t('auth.forgotPassword')}</h2>
+                    <p className="auth-description">{t('auth.forgotPasswordDesc')}</p>
+                    {error && <div className="alert alert-error mb-4">{error}</div>}
+                    <div className="form-group">
+                        <label htmlFor="fp-email">{t('auth.emailAddress')} <span className="text-error">*</span></label>
+                        <input ref={emailRef} id="fp-email" type="email" className={`form-input ${fieldErrors.email ? 'form-input-error' : ''}`}
+                            value={email} onChange={e => { setEmail(e.target.value); if (fieldErrors.email) setFieldErrors({}); }}
+                            placeholder={t('auth.enterEmail')} autoFocus disabled={isLoading} />
+                        {fieldErrors.email && <p className="form-error-text">{fieldErrors.email}</p>}
+                    </div>
+                    <button type="submit" className="btn btn-primary btn-block mb-4" disabled={isLoading}>
+                        {isLoading ? <><span className="btn-spinner"></span> {t('auth.sending')}</> : t('auth.continue')}
+                    </button>
+                    <div className="text-center">
+                        <Link to="/auth/login" className="text-sm text-primary" style={{ textDecoration: 'none' }}>{t('auth.backToLogin')}</Link>
+                    </div>
+                </form>
+            ) : (
+                <form onSubmit={handleResetPassword} className="auth-form">
+                    <h2 className="auth-title text-center">{t('auth.resetPassword')}</h2>
+                    {successMessage && <div className="alert alert-success mb-4">{successMessage}</div>}
+                    {error && <div className="alert alert-error mb-4">{error}</div>}
+
+                    <div className="form-group">
+                        <label>{t('auth.verificationCode')} <span className="text-error">*</span></label>
+                        <p className="text-sm" style={{ color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>{t('auth.enterVerificationCode')}</p>
+                        <OtpInput value={verificationCode} onChange={(newCode) => { setVerificationCode(newCode); if (fieldErrors.verificationCode) setFieldErrors(prev => ({ ...prev, verificationCode: null })); }}
+                            disabled={isLoading} error={!!fieldErrors.verificationCode} />
+                        {fieldErrors.verificationCode && <p className="form-error-text text-center">{fieldErrors.verificationCode}</p>}
+                        <div className="text-center mt-2">
+                            <button type="button" className="btn btn-ghost btn-sm" onClick={handleResendCode} disabled={countdown > 0 || isLoading}>
+                                {countdown > 0 ? t('auth.resendIn', { seconds: countdown }) : t('auth.resendCode')}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="form-group">
+                        <label htmlFor="fp-password">{t('auth.newPassword')} <span className="text-error">*</span></label>
+                        <div className="form-input-wrapper">
+                            <input ref={passwordRef} id="fp-password" type={showPassword ? 'text' : 'password'}
+                                className={`form-input ${fieldErrors.password ? 'form-input-error' : ''}`}
+                                value={password} onChange={e => { setPassword(e.target.value); if (fieldErrors.password) setFieldErrors(prev => ({ ...prev, password: null })); }}
+                                disabled={isLoading} />
+                            <button type="button" className="form-toggle-password" onClick={() => setShowPassword(!showPassword)} tabIndex={-1}>
+                                {showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
+                            </button>
+                        </div>
+                        {fieldErrors.password && <p className="form-error-text">{fieldErrors.password}</p>}
+                    </div>
+
+                    <div className="form-group">
+                        <label htmlFor="fp-confirm-password">{t('auth.confirmPassword')} <span className="text-error">*</span></label>
+                        <div className="form-input-wrapper">
+                            <input ref={confirmPasswordRef} id="fp-confirm-password" type={showConfirmPassword ? 'text' : 'password'}
+                                className={`form-input ${fieldErrors.passwordConfirmation ? 'form-input-error' : ''}`}
+                                value={passwordConfirmation} onChange={e => { setPasswordConfirmation(e.target.value); if (fieldErrors.passwordConfirmation) setFieldErrors(prev => ({ ...prev, passwordConfirmation: null })); }}
+                                disabled={isLoading} />
+                            <button type="button" className="form-toggle-password" onClick={() => setShowConfirmPassword(!showConfirmPassword)} tabIndex={-1}>
+                                {showConfirmPassword ? t('auth.hidePassword') : t('auth.showPassword')}
+                            </button>
+                        </div>
+                        {fieldErrors.passwordConfirmation && <p className="form-error-text">{fieldErrors.passwordConfirmation}</p>}
+                    </div>
+
+                    <button type="submit" className="btn btn-primary btn-block mb-4" disabled={isLoading}>
+                        {isLoading ? <><span className="btn-spinner"></span> {t('auth.resetting')}</> : t('auth.resetPassword')}
+                    </button>
+                    <div className="text-center">
+                        <Link to="/auth/login" className="text-sm text-primary" style={{ textDecoration: 'none' }}>{t('auth.backToLogin')}</Link>
+                    </div>
+                </form>
+            )}
+        </AuthLayout>
+    );
+};
 
 // ============================================================================
 // Sidebar Component
@@ -148,12 +909,9 @@ const Sidebar = ({ collapsed, mobileOpen, onToggle, onMobileClose, user }) => {
 
     const navItems = [
         { path: '/dashboard', label: t('nav.dashboard'), icon: '📊', show: true },
-        // Student-specific
         { path: '/my-mentor', label: t('nav.myMentor'), icon: '👨‍🏫', show: isStudent },
         { path: '/my-applications', label: t('nav.applications'), icon: '📋', show: isStudent || isMentor },
-        // Mentor-specific
         { path: '/my-students', label: t('nav.myStudents'), icon: '👩‍🎓', show: isMentor },
-        // Management
         { path: '/students', label: t('nav.students'), icon: '🎓', show: isManagement },
         { path: '/mentors', label: t('nav.mentors'), icon: '👥', show: isManagement },
         { path: '/applications', label: t('nav.applications'), icon: '📁', show: isManagement },
@@ -161,7 +919,6 @@ const Sidebar = ({ collapsed, mobileOpen, onToggle, onMobileClose, user }) => {
         { path: '/approvals', label: t('nav.approvals'), icon: '✅', show: isManagement },
         { path: '/calendar', label: t('nav.calendar'), icon: '📅', show: true },
         { path: '/reports', label: t('nav.reports'), icon: '📈', show: isManagement },
-        // Admin only
         { path: '/users', label: t('nav.users'), icon: '⚙️', show: isAdmin },
     ].filter(item => item.show);
 
@@ -220,24 +977,11 @@ const Topbar = ({ user, onLogout, onMenuClick, sidebarCollapsed, onToggleSidebar
                 <button className="topbar-toggle" onClick={onMenuClick} title="Menu">
                     ☰
                 </button>
-                <button className="topbar-toggle" onClick={onToggleSidebar} title="Toggle sidebar" style={{ display: 'none' }}>
-                    {sidebarCollapsed ? '→' : '←'}
-                </button>
             </div>
             <div className="topbar-right">
                 <div className="lang-switcher">
-                    <button
-                        className={`lang-btn ${locale === 'vi' ? 'active' : ''}`}
-                        onClick={() => setLocale('vi')}
-                    >
-                        VI
-                    </button>
-                    <button
-                        className={`lang-btn ${locale === 'en' ? 'active' : ''}`}
-                        onClick={() => setLocale('en')}
-                    >
-                        EN
-                    </button>
+                    <button className={`lang-btn ${locale === 'vi' ? 'active' : ''}`} onClick={() => setLocale('vi')}>VI</button>
+                    <button className={`lang-btn ${locale === 'en' ? 'active' : ''}`} onClick={() => setLocale('en')}>EN</button>
                 </div>
                 <div className="topbar-user">
                     <div>
@@ -266,7 +1010,7 @@ const AdminLayout = ({ children, title }) => {
     const handleLogout = async () => {
         try {
             await logout();
-            navigate('/login');
+            navigate('/auth/login');
         } catch (error) {
             console.error('Logout failed', error);
         }
@@ -279,10 +1023,7 @@ const AdminLayout = ({ children, title }) => {
     return (
         <div className="admin-layout">
             {sidebarMobileOpen && (
-                <div
-                    className="sidebar-overlay"
-                    onClick={() => setSidebarMobileOpen(false)}
-                />
+                <div className="sidebar-overlay" onClick={() => setSidebarMobileOpen(false)} />
             )}
             <Sidebar
                 collapsed={sidebarCollapsed}
@@ -309,373 +1050,6 @@ const AdminLayout = ({ children, title }) => {
                         {children}
                     </div>
                 </main>
-            </div>
-        </div>
-    );
-};
-
-// ============================================================================
-// Login Page
-// ============================================================================
-const LoginPage = () => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
-    const [error, setError] = useState(null);
-    const [fieldErrors, setFieldErrors] = useState({});
-    const [isLoading, setIsLoading] = useState(false);
-    const { login } = useAuth();
-    const { t } = useI18n();
-    const navigate = useNavigate();
-    const emailRef = useRef(null);
-    const passwordRef = useRef(null);
-
-    const validate = () => {
-        const errors = {};
-        if (!email.trim()) {
-            errors.email = t('auth.emailRequired');
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            errors.email = t('auth.emailInvalid');
-        }
-        if (!password) {
-            errors.password = t('auth.passwordRequired');
-        }
-        setFieldErrors(errors);
-        if (errors.email) emailRef.current?.focus();
-        else if (errors.password) passwordRef.current?.focus();
-        return Object.keys(errors).length === 0;
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setError(null);
-        setFieldErrors({});
-        if (!validate()) return;
-
-        setIsLoading(true);
-        try {
-            await login(email, password);
-            navigate('/dashboard');
-        } catch (err) {
-            const errors = err.response?.data?.errors;
-            if (errors?.email) {
-                setFieldErrors({ email: errors.email[0] });
-                emailRef.current?.focus();
-            } else {
-                setError(err.response?.data?.message || t('auth.loginFailed'));
-            }
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleFieldChange = (field, value, setter) => {
-        setter(value);
-        if (fieldErrors[field]) setFieldErrors(prev => ({ ...prev, [field]: null }));
-        if (error) setError(null);
-    };
-
-    return (
-        <div className="auth-layout">
-            <div className="auth-card">
-                <div className="auth-header auth-header-logo">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}>
-                        <div className="sidebar-logo-icon" style={{ width: 40, height: 40, fontSize: '1rem' }}>V</div>
-                        <span className="auth-logo-text">Vimiss</span>
-                    </div>
-                    <p className="auth-logo-subtitle">Study Abroad Management</p>
-                </div>
-
-                <form onSubmit={handleSubmit} className="auth-form">
-                    <h2 className="auth-title text-center">{t('auth.welcomeBack')}</h2>
-                    <p className="auth-description">{t('auth.loginDesc')}</p>
-
-                    {error && <div className="alert alert-error mb-4">{error}</div>}
-
-                    <div className="form-group">
-                        <label htmlFor="email">{t('auth.emailAddress')} <span className="text-error">*</span></label>
-                        <input
-                            ref={emailRef}
-                            id="email"
-                            type="email"
-                            className={`form-input ${fieldErrors.email ? 'form-input-error' : ''}`}
-                            value={email}
-                            onChange={e => handleFieldChange('email', e.target.value, setEmail)}
-                            placeholder={t('auth.enterEmail')}
-                            autoFocus
-                            disabled={isLoading}
-                        />
-                        {fieldErrors.email && <p className="form-error-text">{fieldErrors.email}</p>}
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="password">{t('auth.password')} <span className="text-error">*</span></label>
-                        <div className="form-input-wrapper">
-                            <input
-                                ref={passwordRef}
-                                id="password"
-                                type={showPassword ? 'text' : 'password'}
-                                className={`form-input ${fieldErrors.password ? 'form-input-error' : ''}`}
-                                value={password}
-                                onChange={e => handleFieldChange('password', e.target.value, setPassword)}
-                                placeholder={t('auth.enterPassword')}
-                                disabled={isLoading}
-                            />
-                            <button
-                                type="button"
-                                className="form-toggle-password"
-                                onClick={() => setShowPassword(!showPassword)}
-                                tabIndex={-1}
-                            >
-                                {showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
-                            </button>
-                        </div>
-                        {fieldErrors.password && <p className="form-error-text">{fieldErrors.password}</p>}
-                    </div>
-
-                    <button type="submit" className="btn btn-primary btn-block mb-4" disabled={isLoading}>
-                        {isLoading ? (
-                            <><span className="btn-spinner"></span> {t('auth.sending')}</>
-                        ) : t('auth.loginButton')}
-                    </button>
-
-                    <div className="text-center">
-                        <Link to="/forgot-password" className="text-sm text-primary" style={{ textDecoration: 'none' }}>
-                            {t('auth.forgotPassword')}
-                        </Link>
-                    </div>
-                </form>
-            </div>
-        </div>
-    );
-};
-
-// ============================================================================
-// Forgot Password Page (2-step)
-// ============================================================================
-const ForgotPasswordPage = () => {
-    const [step, setStep] = useState(1);
-    const [email, setEmail] = useState('');
-    const [verificationCode, setVerificationCode] = useState(['', '', '', '', '', '']);
-    const [password, setPassword] = useState('');
-    const [passwordConfirmation, setPasswordConfirmation] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [error, setError] = useState(null);
-    const [fieldErrors, setFieldErrors] = useState({});
-    const [isLoading, setIsLoading] = useState(false);
-    const [successMessage, setSuccessMessage] = useState(null);
-    const [countdown, setCountdown] = useState(0);
-    const { t } = useI18n();
-    const navigate = useNavigate();
-
-    const emailRef = useRef(null);
-    const codeRefs = [useRef(null), useRef(null), useRef(null), useRef(null), useRef(null), useRef(null)];
-    const passwordRef = useRef(null);
-    const confirmPasswordRef = useRef(null);
-
-    useEffect(() => {
-        if (countdown > 0) {
-            const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-            return () => clearTimeout(timer);
-        }
-    }, [countdown]);
-
-    const handleRequestCode = async (e) => {
-        e.preventDefault();
-        setError(null);
-        setFieldErrors({});
-        const errors = {};
-        if (!email.trim()) errors.email = t('auth.emailRequired');
-        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = t('auth.emailInvalid');
-        if (Object.keys(errors).length) {
-            setFieldErrors(errors);
-            emailRef.current?.focus();
-            return;
-        }
-
-        setIsLoading(true);
-        try {
-            await axios.post('/forgot-password/request', { email });
-        } catch (err) { /* ignore - generic message */ }
-        setSuccessMessage(t('auth.codeSentGeneric'));
-        setStep(2);
-        setCountdown(60);
-        setIsLoading(false);
-    };
-
-    const handleResetPassword = async (e) => {
-        e.preventDefault();
-        setError(null);
-        setFieldErrors({});
-        const errors = {};
-        const codeString = verificationCode.join('');
-        if (codeString.length !== 6) errors.verificationCode = t('auth.codeRequired');
-        if (!password) errors.password = t('auth.passwordRequired');
-        else if (password.length < 8) errors.password = t('auth.passwordTooShort');
-        if (!passwordConfirmation) errors.passwordConfirmation = t('auth.confirmPasswordRequired');
-        else if (password !== passwordConfirmation) {
-            errors.passwordConfirmation = t('auth.passwordMismatch');
-            errors.password = t('auth.passwordMismatch');
-        }
-        if (Object.keys(errors).length) {
-            setFieldErrors(errors);
-            if (errors.verificationCode) codeRefs[0].current?.focus();
-            else if (errors.password) passwordRef.current?.focus();
-            else confirmPasswordRef.current?.focus();
-            return;
-        }
-
-        setIsLoading(true);
-        try {
-            const response = await axios.post('/forgot-password/reset', {
-                email,
-                verification_code: codeString,
-                password,
-                password_confirmation: passwordConfirmation,
-            });
-            setSuccessMessage(response.data.message || t('auth.passwordResetSuccess'));
-            setTimeout(() => navigate('/login'), 2000);
-        } catch (err) {
-            const errs = err.response?.data?.errors;
-            if (errs?.verification_code) {
-                setFieldErrors({ verificationCode: errs.verification_code[0] });
-                codeRefs[0].current?.focus();
-            } else if (errs?.password) {
-                setFieldErrors({ password: errs.password[0] });
-                passwordRef.current?.focus();
-            } else {
-                setError(err.response?.data?.message || t('auth.failedToResetPassword'));
-            }
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleResendCode = async () => {
-        if (countdown > 0 || isLoading) return;
-        setIsLoading(true);
-        try { await axios.post('/forgot-password/request', { email }); } catch (err) { /* ignore */ }
-        setSuccessMessage(t('auth.verificationCodeResent'));
-        setCountdown(60);
-        setIsLoading(false);
-    };
-
-    const handleCodeChange = (index, value) => {
-        const digit = value.replace(/\D/g, '').slice(-1);
-        const newCode = [...verificationCode];
-        newCode[index] = digit;
-        setVerificationCode(newCode);
-        if (fieldErrors.verificationCode) setFieldErrors(prev => ({ ...prev, verificationCode: null }));
-        if (digit && index < 5) codeRefs[index + 1].current?.focus();
-    };
-
-    const handleCodeKeyDown = (index, e) => {
-        if (e.key === 'Backspace' && !verificationCode[index] && index > 0) {
-            codeRefs[index - 1].current?.focus();
-        }
-    };
-
-    const handleCodePaste = (e) => {
-        e.preventDefault();
-        const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
-        const newCode = [...verificationCode];
-        for (let i = 0; i < 6; i++) newCode[i] = pasted[i] || '';
-        setVerificationCode(newCode);
-        codeRefs[Math.min(pasted.length, 5)].current?.focus();
-    };
-
-    return (
-        <div className="auth-layout">
-            <div className="auth-card">
-                <div className="auth-header auth-header-logo">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}>
-                        <div className="sidebar-logo-icon" style={{ width: 40, height: 40, fontSize: '1rem' }}>V</div>
-                        <span className="auth-logo-text">Vimiss</span>
-                    </div>
-                </div>
-
-                {step === 1 ? (
-                    <form onSubmit={handleRequestCode} className="auth-form">
-                        <h2 className="auth-title text-center">{t('auth.forgotPassword')}</h2>
-                        <p className="auth-description">{t('auth.forgotPasswordDesc')}</p>
-                        {error && <div className="alert alert-error mb-4">{error}</div>}
-                        <div className="form-group">
-                            <label htmlFor="email">{t('auth.emailAddress')} <span className="text-error">*</span></label>
-                            <input ref={emailRef} id="email" type="email" className={`form-input ${fieldErrors.email ? 'form-input-error' : ''}`}
-                                value={email} onChange={e => { setEmail(e.target.value); if (fieldErrors.email) setFieldErrors({}); }}
-                                placeholder={t('auth.enterEmail')} autoFocus disabled={isLoading} />
-                            {fieldErrors.email && <p className="form-error-text">{fieldErrors.email}</p>}
-                        </div>
-                        <button type="submit" className="btn btn-primary btn-block mb-4" disabled={isLoading}>
-                            {isLoading ? <><span className="btn-spinner"></span> {t('auth.sending')}</> : t('auth.continue')}
-                        </button>
-                        <div className="text-center">
-                            <Link to="/login" className="text-sm text-primary" style={{ textDecoration: 'none' }}>{t('auth.backToLogin')}</Link>
-                        </div>
-                    </form>
-                ) : (
-                    <form onSubmit={handleResetPassword} className="auth-form">
-                        <h2 className="auth-title text-center">{t('auth.resetPassword')}</h2>
-                        {successMessage && <div className="alert alert-success mb-4">{successMessage}</div>}
-                        {error && <div className="alert alert-error mb-4">{error}</div>}
-
-                        <div className="form-group">
-                            <label>{t('auth.verificationCode')} <span className="text-error">*</span></label>
-                            <p className="text-sm" style={{ color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>{t('auth.enterVerificationCode')}</p>
-                            <div className="otp-container" onPaste={handleCodePaste}>
-                                {verificationCode.map((digit, i) => (
-                                    <input key={i} ref={codeRefs[i]} type="text" inputMode="numeric" maxLength={1}
-                                        className={`otp-input ${fieldErrors.verificationCode ? 'otp-error' : ''}`}
-                                        value={digit} onChange={e => handleCodeChange(i, e.target.value)}
-                                        onKeyDown={e => handleCodeKeyDown(i, e)} disabled={isLoading} />
-                                ))}
-                            </div>
-                            {fieldErrors.verificationCode && <p className="form-error-text text-center">{fieldErrors.verificationCode}</p>}
-                            <div className="text-center mt-2">
-                                <button type="button" className="btn btn-ghost btn-sm" onClick={handleResendCode}
-                                    disabled={countdown > 0 || isLoading}>
-                                    {countdown > 0 ? t('auth.resendIn', { seconds: countdown }) : t('auth.resendCode')}
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="form-group">
-                            <label htmlFor="password">{t('auth.newPassword')} <span className="text-error">*</span></label>
-                            <div className="form-input-wrapper">
-                                <input ref={passwordRef} id="password" type={showPassword ? 'text' : 'password'}
-                                    className={`form-input ${fieldErrors.password ? 'form-input-error' : ''}`}
-                                    value={password} onChange={e => { setPassword(e.target.value); if (fieldErrors.password) setFieldErrors(prev => ({ ...prev, password: null })); }}
-                                    disabled={isLoading} />
-                                <button type="button" className="form-toggle-password" onClick={() => setShowPassword(!showPassword)} tabIndex={-1}>
-                                    {showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
-                                </button>
-                            </div>
-                            {fieldErrors.password && <p className="form-error-text">{fieldErrors.password}</p>}
-                        </div>
-
-                        <div className="form-group">
-                            <label htmlFor="confirm-password">{t('auth.confirmPassword')} <span className="text-error">*</span></label>
-                            <div className="form-input-wrapper">
-                                <input ref={confirmPasswordRef} id="confirm-password" type={showConfirmPassword ? 'text' : 'password'}
-                                    className={`form-input ${fieldErrors.passwordConfirmation ? 'form-input-error' : ''}`}
-                                    value={passwordConfirmation} onChange={e => { setPasswordConfirmation(e.target.value); if (fieldErrors.passwordConfirmation) setFieldErrors(prev => ({ ...prev, passwordConfirmation: null })); }}
-                                    disabled={isLoading} />
-                                <button type="button" className="form-toggle-password" onClick={() => setShowConfirmPassword(!showConfirmPassword)} tabIndex={-1}>
-                                    {showConfirmPassword ? t('auth.hidePassword') : t('auth.showPassword')}
-                                </button>
-                            </div>
-                            {fieldErrors.passwordConfirmation && <p className="form-error-text">{fieldErrors.passwordConfirmation}</p>}
-                        </div>
-
-                        <button type="submit" className="btn btn-primary btn-block mb-4" disabled={isLoading}>
-                            {isLoading ? <><span className="btn-spinner"></span> {t('auth.resetting')}</> : t('auth.resetPassword')}
-                        </button>
-                        <div className="text-center">
-                            <Link to="/login" className="text-sm text-primary" style={{ textDecoration: 'none' }}>{t('auth.backToLogin')}</Link>
-                        </div>
-                    </form>
-                )}
             </div>
         </div>
     );
@@ -754,7 +1128,7 @@ const ChangePasswordPage = () => {
                                 {fieldErrors.passwordConfirmation && <p className="form-error-text">{fieldErrors.passwordConfirmation}</p>}
                             </div>
                             <button type="submit" className="btn btn-primary btn-block" disabled={isLoading}>
-                                {isLoading ? <><span className="btn-spinner"></span></> : t('auth.changePassword')}
+                                {isLoading ? <span className="btn-spinner"></span> : t('auth.changePassword')}
                             </button>
                         </form>
                     </div>
@@ -811,7 +1185,6 @@ const DashboardPage = () => {
                     <div className="empty-state">
                         <div className="empty-state-icon">📭</div>
                         <div className="empty-state-title">{t('common.noData')}</div>
-                        <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Activity will appear here as you use the system.</p>
                     </div>
                 </div>
             </div>
@@ -868,7 +1241,7 @@ const ProfilePage = () => {
                     </div>
                 </div>
                 <div className="mt-4">
-                    <Link to="/change-password" className="btn btn-outline">{t('auth.changePassword')}</Link>
+                    <Link to="/settings/change-password" className="btn btn-outline">{t('auth.changePassword')}</Link>
                 </div>
             </div>
         </AdminLayout>
@@ -1028,7 +1401,6 @@ const CreateUserModal = ({ onClose, onCreated }) => {
 // Placeholder Pages
 // ============================================================================
 const PlaceholderPage = ({ title, icon, description }) => {
-    const { t } = useI18n();
     return (
         <AdminLayout title={title}>
             <div className="empty-state">
@@ -1048,13 +1420,22 @@ const AppRouter = () => {
 
     return (
         <Routes>
-            {/* Guest routes */}
-            <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
-            <Route path="/forgot-password" element={<GuestRoute><ForgotPasswordPage /></GuestRoute>} />
+            {/* Public landing */}
+            <Route path="/" element={<LandingPage />} />
+
+            {/* Auth routes (guest only) */}
+            <Route path="/auth/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
+            <Route path="/auth/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
+            <Route path="/auth/forgot-password" element={<GuestRoute><ForgotPasswordPage /></GuestRoute>} />
+
+            {/* Legacy routes redirect */}
+            <Route path="/login" element={<Navigate to="/auth/login" replace />} />
+            <Route path="/forgot-password" element={<Navigate to="/auth/forgot-password" replace />} />
 
             {/* Protected routes - all roles */}
             <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-            <Route path="/change-password" element={<ProtectedRoute><ChangePasswordPage /></ProtectedRoute>} />
+            <Route path="/settings/change-password" element={<ProtectedRoute><ChangePasswordPage /></ProtectedRoute>} />
+            <Route path="/change-password" element={<Navigate to="/settings/change-password" replace />} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
             <Route path="/calendar" element={<ProtectedRoute><PlaceholderPage title={t('nav.calendar')} icon="📅" /></ProtectedRoute>} />
 
@@ -1065,7 +1446,7 @@ const AppRouter = () => {
             {/* Mentor routes */}
             <Route path="/my-students" element={<RoleRoute roles={['mentor']}><PlaceholderPage title={t('nav.myStudents')} icon="👩‍🎓" /></RoleRoute>} />
 
-            {/* Management routes (admin + director) */}
+            {/* Management routes */}
             <Route path="/students" element={<RoleRoute roles={['admin', 'director']}><PlaceholderPage title={t('nav.students')} icon="🎓" /></RoleRoute>} />
             <Route path="/mentors" element={<RoleRoute roles={['admin', 'director']}><PlaceholderPage title={t('nav.mentors')} icon="👥" /></RoleRoute>} />
             <Route path="/applications" element={<RoleRoute roles={['admin', 'director']}><PlaceholderPage title={t('nav.applications')} icon="📁" /></RoleRoute>} />
@@ -1076,9 +1457,8 @@ const AppRouter = () => {
             {/* Admin only */}
             <Route path="/users" element={<RoleRoute roles={['admin']}><UsersPage /></RoleRoute>} />
 
-            {/* Default redirect */}
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            {/* Catch-all */}
+            <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
     );
 };
