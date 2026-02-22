@@ -2,9 +2,21 @@ import './bootstrap';
 import '../css/app.css';
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate, useLocation, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { I18nProvider, useI18n } from './i18n';
+
+// Page Imports (Phase 3-6)
+import { MyMentorPage, MentorDirectoryPage } from './pages/MentorPages';
+import { MyStudentsPage } from './pages/MyStudentsPage';
+import { ApplicationsListPage, ApplicationDetailPage } from './pages/ApplicationPages';
+import { AdminMentorPage, AdminAssignmentPage } from './pages/AdminMentorPage';
+import { NotificationBell, NotificationsPage } from './pages/NotificationComponents';
+import { ScholarshipsPage } from './pages/ScholarshipsPage';
+import { UniversitiesPage } from './pages/UniversitiesPage';
+import { ApprovalsPage } from './pages/ApprovalsPage';
+import { CalendarPage } from './pages/CalendarPage';
+import { MentorLoadPage } from './pages/MentorLoadPage';
 
 // ============================================================================
 // Axios Configuration
@@ -187,8 +199,7 @@ const LandingPage = () => {
             <nav className="landing-nav">
                 <div className="landing-nav-inner">
                     <div className="landing-nav-brand">
-                        <div className="sidebar-logo-icon" style={{ width: 36, height: 36, fontSize: '0.9rem' }}>V</div>
-                        <span className="landing-brand-text">Vimiss</span>
+                        <img src="/images/logo/vimiss_logo_sologan.png" alt="Vimiss" style={{ height: 40 }} />
                     </div>
                     <div className="landing-nav-links">
                         <a href="#features" className="landing-nav-link">{t('landing.navAbout')}</a>
@@ -277,8 +288,7 @@ const LandingPage = () => {
                 <div className="landing-footer-inner">
                     <div className="landing-footer-col">
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                            <div className="sidebar-logo-icon" style={{ width: 32, height: 32, fontSize: '0.85rem' }}>V</div>
-                            <span style={{ fontWeight: 700, fontSize: '1.25rem', color: '#fff' }}>Vimiss</span>
+                            <img src="/images/logo/vimiss_logo_sologan.png" alt="Vimiss" style={{ height: 36 }} />
                         </div>
                         <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.875rem', lineHeight: 1.6 }}>{t('landing.footerDesc')}</p>
                     </div>
@@ -319,17 +329,34 @@ const AuthLayout = ({ children, twoColumn = false }) => {
             <div className="auth-layout-two-col">
                 <div className="auth-panel-left">
                     <div className="auth-panel-left-content">
-                        <Link to="/" className="auth-panel-brand">
-                            <div className="sidebar-logo-icon" style={{ width: 48, height: 48, fontSize: '1.2rem' }}>V</div>
-                            <span style={{ fontSize: '2rem', fontWeight: 700, color: '#fff' }}>Vimiss</span>
-                        </Link>
-                        <h2 className="auth-panel-left-title">{t('landing.heroTitle')}</h2>
-                        <p className="auth-panel-left-subtitle">{t('landing.heroSubtitle')}</p>
-                        <div className="auth-panel-left-features">
-                            <div className="auth-panel-feature">✅ {t('landing.feature1Title')}</div>
-                            <div className="auth-panel-feature">✅ {t('landing.feature2Title')}</div>
-                            <div className="auth-panel-feature">✅ {t('landing.feature3Title')}</div>
+                        <div className="auth-panel-brand">
+                            <div className="auth-brand-logo">VIMISS</div>
                         </div>
+                        <h1 className="auth-panel-left-title">Hành Trình Du Học<br />Bắt Đầu Từ Đây</h1>
+                        <p className="auth-panel-left-subtitle">
+                            Vimiss kết nối học sinh Việt Nam với các trường đại học hàng đầu thế giới. 
+                            Tư vấn chuyên nghiệp, quản lý hồ sơ hiệu quả, và hỗ trợ toàn diện trên mọi chặng đường.
+                        </p>
+                        <ul className="auth-panel-left-features">
+                            <li className="auth-panel-feature">
+                                <svg className="feature-check" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                <span>Mentor Chuyên Nghiệp</span>
+                            </li>
+                            <li className="auth-panel-feature">
+                                <svg className="feature-check" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                <span>Quản Lý Hồ Sơ Thông Minh</span>
+                            </li>
+                            <li className="auth-panel-feature">
+                                <svg className="feature-check" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                <span>Hỗ Trợ Toàn Diện</span>
+                            </li>
+                        </ul>
                     </div>
                 </div>
                 <div className="auth-panel-right">
@@ -346,8 +373,7 @@ const AuthLayout = ({ children, twoColumn = false }) => {
             <div className="auth-card">
                 <div className="auth-header auth-header-logo">
                     <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center', textDecoration: 'none' }}>
-                        <div className="sidebar-logo-icon" style={{ width: 40, height: 40, fontSize: '1rem' }}>V</div>
-                        <span className="auth-logo-text">Vimiss</span>
+                        <img src="/images/logo/vimiss_logo_sologan.png" alt="Vimiss" style={{ height: 44 }} />
                     </Link>
                 </div>
                 {children}
@@ -910,14 +936,19 @@ const Sidebar = ({ collapsed, mobileOpen, onToggle, onMobileClose, user }) => {
     const navItems = [
         { path: '/dashboard', label: t('nav.dashboard'), icon: '📊', show: true },
         { path: '/my-mentor', label: t('nav.myMentor'), icon: '👨‍🏫', show: isStudent },
+        { path: '/mentor-directory', label: 'Mentor Directory', icon: '📖', show: isStudent },
         { path: '/my-applications', label: t('nav.applications'), icon: '📋', show: isStudent || isMentor },
         { path: '/my-students', label: t('nav.myStudents'), icon: '👩‍🎓', show: isMentor },
+        { path: '/scholarships', label: 'Scholarships', icon: '🎓', show: true },
         { path: '/students', label: t('nav.students'), icon: '🎓', show: isManagement },
         { path: '/mentors', label: t('nav.mentors'), icon: '👥', show: isManagement },
+        { path: '/mentor-assignments', label: 'Assignments', icon: '🔗', show: isAdmin },
         { path: '/applications', label: t('nav.applications'), icon: '📁', show: isManagement },
         { path: '/universities', label: t('nav.universities'), icon: '🏛️', show: isManagement },
         { path: '/approvals', label: t('nav.approvals'), icon: '✅', show: isManagement },
         { path: '/calendar', label: t('nav.calendar'), icon: '📅', show: true },
+        { path: '/notifications', label: 'Notifications', icon: '🔔', show: false },
+        { path: '/mentor-load', label: 'Mentor Load', icon: '📈', show: isManagement },
         { path: '/reports', label: t('nav.reports'), icon: '📈', show: isManagement },
         { path: '/users', label: t('nav.users'), icon: '⚙️', show: isAdmin },
     ].filter(item => item.show);
@@ -931,8 +962,10 @@ const Sidebar = ({ collapsed, mobileOpen, onToggle, onMobileClose, user }) => {
     return (
         <aside className={sidebarClass}>
             <div className="sidebar-header">
-                <div className="sidebar-logo-icon">V</div>
-                {!collapsed && <span className="sidebar-logo">Vimiss</span>}
+                {collapsed
+                    ? <img src="/images/logo/logo_only.png" alt="Vimiss" style={{ height: 32 }} />
+                    : <img src="/images/logo/vimiss_logo_sologan.png" alt="Vimiss" style={{ height: 36 }} />
+                }
             </div>
             <nav className="sidebar-nav">
                 {navItems.map(item => (
@@ -966,6 +999,7 @@ const Sidebar = ({ collapsed, mobileOpen, onToggle, onMobileClose, user }) => {
 // ============================================================================
 const Topbar = ({ user, onLogout, onMenuClick, sidebarCollapsed, onToggleSidebar }) => {
     const { t, locale, setLocale } = useI18n();
+    const navigate = useNavigate();
 
     const getInitials = (name) => {
         return name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '?';
@@ -979,6 +1013,7 @@ const Topbar = ({ user, onLogout, onMenuClick, sidebarCollapsed, onToggleSidebar
                 </button>
             </div>
             <div className="topbar-right">
+                <NotificationBell onClick={() => navigate('/notifications')} />
                 <div className="lang-switcher">
                     <button className={`lang-btn ${locale === 'vi' ? 'active' : ''}`} onClick={() => setLocale('vi')}>VI</button>
                     <button className={`lang-btn ${locale === 'en' ? 'active' : ''}`} onClick={() => setLocale('en')}>EN</button>
@@ -1417,6 +1452,16 @@ const PlaceholderPage = ({ title, icon, description }) => {
 // ============================================================================
 const AppRouter = () => {
     const { t } = useI18n();
+    const navigate = useNavigate();
+
+    // Common props passed to page components
+    const pageProps = { AdminLayout, useAuth, useToast, useI18n, navigate };
+
+    // Wrapper for application detail that extracts route param
+    const ApplicationDetailWrapper = () => {
+        const { id } = useParams();
+        return <ApplicationDetailPage {...pageProps} applicationId={id} />;
+    };
 
     return (
         <Routes>
@@ -1437,21 +1482,29 @@ const AppRouter = () => {
             <Route path="/settings/change-password" element={<ProtectedRoute><ChangePasswordPage /></ProtectedRoute>} />
             <Route path="/change-password" element={<Navigate to="/settings/change-password" replace />} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-            <Route path="/calendar" element={<ProtectedRoute><PlaceholderPage title={t('nav.calendar')} icon="📅" /></ProtectedRoute>} />
+            <Route path="/calendar" element={<ProtectedRoute><CalendarPage {...pageProps} /></ProtectedRoute>} />
+            <Route path="/notifications" element={<ProtectedRoute><NotificationsPage {...pageProps} /></ProtectedRoute>} />
+            <Route path="/scholarships" element={<ProtectedRoute><ScholarshipsPage {...pageProps} /></ProtectedRoute>} />
 
             {/* Student routes */}
-            <Route path="/my-mentor" element={<RoleRoute roles={['student']}><PlaceholderPage title={t('nav.myMentor')} icon="👨‍🏫" /></RoleRoute>} />
-            <Route path="/my-applications" element={<RoleRoute roles={['student', 'mentor']}><PlaceholderPage title={t('nav.applications')} icon="📋" /></RoleRoute>} />
+            <Route path="/my-mentor" element={<RoleRoute roles={['student']}><MyMentorPage {...pageProps} /></RoleRoute>} />
+            <Route path="/mentor-directory" element={<RoleRoute roles={['student']}><MentorDirectoryPage {...pageProps} /></RoleRoute>} />
+            <Route path="/my-applications" element={<RoleRoute roles={['student', 'mentor']}><ApplicationsListPage {...pageProps} /></RoleRoute>} />
 
             {/* Mentor routes */}
-            <Route path="/my-students" element={<RoleRoute roles={['mentor']}><PlaceholderPage title={t('nav.myStudents')} icon="👩‍🎓" /></RoleRoute>} />
+            <Route path="/my-students" element={<RoleRoute roles={['mentor']}><MyStudentsPage {...pageProps} /></RoleRoute>} />
+
+            {/* Application detail (student, mentor, admin) */}
+            <Route path="/applications/:id" element={<ProtectedRoute><ApplicationDetailWrapper /></ProtectedRoute>} />
 
             {/* Management routes */}
             <Route path="/students" element={<RoleRoute roles={['admin', 'director']}><PlaceholderPage title={t('nav.students')} icon="🎓" /></RoleRoute>} />
-            <Route path="/mentors" element={<RoleRoute roles={['admin', 'director']}><PlaceholderPage title={t('nav.mentors')} icon="👥" /></RoleRoute>} />
-            <Route path="/applications" element={<RoleRoute roles={['admin', 'director']}><PlaceholderPage title={t('nav.applications')} icon="📁" /></RoleRoute>} />
-            <Route path="/universities" element={<RoleRoute roles={['admin', 'director']}><PlaceholderPage title={t('nav.universities')} icon="🏛️" /></RoleRoute>} />
-            <Route path="/approvals" element={<RoleRoute roles={['admin', 'director']}><PlaceholderPage title={t('nav.approvals')} icon="✅" /></RoleRoute>} />
+            <Route path="/mentors" element={<RoleRoute roles={['admin']}><AdminMentorPage {...pageProps} /></RoleRoute>} />
+            <Route path="/mentor-assignments" element={<RoleRoute roles={['admin']}><AdminAssignmentPage {...pageProps} /></RoleRoute>} />
+            <Route path="/applications" element={<RoleRoute roles={['admin', 'director']}><ApplicationsListPage {...pageProps} /></RoleRoute>} />
+            <Route path="/universities" element={<RoleRoute roles={['admin', 'director']}><UniversitiesPage {...pageProps} /></RoleRoute>} />
+            <Route path="/approvals" element={<RoleRoute roles={['admin', 'director']}><ApprovalsPage {...pageProps} /></RoleRoute>} />
+            <Route path="/mentor-load" element={<RoleRoute roles={['admin', 'director']}><MentorLoadPage {...pageProps} /></RoleRoute>} />
             <Route path="/reports" element={<RoleRoute roles={['admin', 'director']}><PlaceholderPage title={t('nav.reports')} icon="📈" /></RoleRoute>} />
 
             {/* Admin only */}
