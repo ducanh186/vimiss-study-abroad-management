@@ -15,6 +15,16 @@ Route::post('/login', [AuthController::class, 'login'])
 Route::post('/logout', [AuthController::class, 'logout'])
     ->middleware('auth:sanctum');
 
+// Registration (student self-register)
+Route::prefix('register')->group(function () {
+    Route::post('/request-code', [AuthController::class, 'registerRequestCode'])
+        ->middleware('throttle:register-request-code');
+
+    Route::post('/', [AuthController::class, 'register'])
+        ->middleware('throttle:register');
+});
+
+// Forgot / Reset password
 Route::prefix('forgot-password')->group(function () {
     Route::post('/request', [AuthController::class, 'forgotPasswordRequest'])
         ->middleware('throttle:forgot-password-request');
@@ -22,6 +32,15 @@ Route::prefix('forgot-password')->group(function () {
     Route::post('/reset', [AuthController::class, 'forgotPasswordReset'])
         ->middleware('throttle:forgot-password-reset');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Public Landing Page (no auth required)
+|--------------------------------------------------------------------------
+*/
+
+Route::view('/', 'landing')->name('landing');
+Route::view('/home', 'landing')->name('home');
 
 /*
 |--------------------------------------------------------------------------
@@ -33,4 +52,4 @@ Route::view('/login', 'spa')->name('login');
 
 Route::get('/{any}', function () {
     return view('spa');
-})->where('any', '.*');
+})->where('any', '.+');

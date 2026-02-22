@@ -1,0 +1,41 @@
+# ==========================================================
+# Vimiss Study Abroad Management — Docker Compose
+# One command: docker compose up --build
+# Open: http://localhost:8080
+# ==========================================================
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+    container_name: vimiss_api
+    env_file:
+      - .env.docker
+    volumes:
+      # Persistent SQLite database
+      - ./docker-data/sqlite:/var/www/database
+      # Persistent storage (uploads, sessions, cache)
+      - ./docker-data/storage:/var/www/storage
+      # Logs (easy access from host)
+      - ./docker-data/logs:/var/www/storage/logs
+      # Google Drive service account JSON (just drop the file in this folder)
+      - ./docker-data/drive/drive-sa.json:/var/www/drive-sa.json:ro
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "php", "-r", "echo @file_get_contents('http://127.0.0.1:8000/api/health') ? 'ok' : 'fail';"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/web/Dockerfile
+    container_name: vimiss_web
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "8080:80"

@@ -2,9 +2,21 @@ import './bootstrap';
 import '../css/app.css';
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate, useLocation, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { I18nProvider, useI18n } from './i18n';
+
+// Page Imports (Phase 3-6)
+import { MyMentorPage, MentorDirectoryPage } from './pages/MentorPages';
+import { MyStudentsPage } from './pages/MyStudentsPage';
+import { ApplicationsListPage, ApplicationDetailPage } from './pages/ApplicationPages';
+import { AdminMentorPage, AdminAssignmentPage } from './pages/AdminMentorPage';
+import { NotificationBell, NotificationsPage } from './pages/NotificationComponents';
+import { ScholarshipsPage } from './pages/ScholarshipsPage';
+import { UniversitiesPage } from './pages/UniversitiesPage';
+import { ApprovalsPage } from './pages/ApprovalsPage';
+import { CalendarPage } from './pages/CalendarPage';
+import { MentorLoadPage } from './pages/MentorLoadPage';
 
 // ============================================================================
 // Axios Configuration
@@ -103,7 +115,7 @@ const ProtectedRoute = ({ children }) => {
     const { user, loading } = useAuth();
     const location = useLocation();
     if (loading) return <LoadingScreen />;
-    if (!user) return <Navigate to="/login" state={{ from: location }} replace />;
+    if (!user) return <Navigate to="/auth/login" state={{ from: location }} replace />;
     return children;
 };
 
@@ -118,7 +130,7 @@ const RoleRoute = ({ children, roles }) => {
     const { user, loading } = useAuth();
     const location = useLocation();
     if (loading) return <LoadingScreen />;
-    if (!user) return <Navigate to="/login" state={{ from: location }} replace />;
+    if (!user) return <Navigate to="/auth/login" state={{ from: location }} replace />;
     if (!roles.includes(user.role)) return <Navigate to="/dashboard" replace />;
     return children;
 };
@@ -134,188 +146,244 @@ const LoadingScreen = () => (
 );
 
 // ============================================================================
-// Sidebar Component
+// OTP Input Component (shared)
 // ============================================================================
-const Sidebar = ({ collapsed, mobileOpen, onToggle, onMobileClose, user }) => {
-    const location = useLocation();
-    const { t } = useI18n();
+const OtpInput = ({ value, onChange, disabled, error }) => {
+    const refs = [useRef(null), useRef(null), useRef(null), useRef(null), useRef(null), useRef(null)];
 
-    const isAdmin = user?.role === 'admin';
-    const isDirector = user?.role === 'director';
-    const isMentor = user?.role === 'mentor';
-    const isStudent = user?.role === 'student';
-    const isManagement = isAdmin || isDirector;
-
-    const navItems = [
-        { path: '/dashboard', label: t('nav.dashboard'), icon: '📊', show: true },
-        // Student-specific
-        { path: '/my-mentor', label: t('nav.myMentor'), icon: '👨‍🏫', show: isStudent },
-        { path: '/my-applications', label: t('nav.applications'), icon: '📋', show: isStudent || isMentor },
-        // Mentor-specific
-        { path: '/my-students', label: t('nav.myStudents'), icon: '👩‍🎓', show: isMentor },
-        // Management
-        { path: '/students', label: t('nav.students'), icon: '🎓', show: isManagement },
-        { path: '/mentors', label: t('nav.mentors'), icon: '👥', show: isManagement },
-        { path: '/applications', label: t('nav.applications'), icon: '📁', show: isManagement },
-        { path: '/universities', label: t('nav.universities'), icon: '🏛️', show: isManagement },
-        { path: '/approvals', label: t('nav.approvals'), icon: '✅', show: isManagement },
-        { path: '/calendar', label: t('nav.calendar'), icon: '📅', show: true },
-        { path: '/reports', label: t('nav.reports'), icon: '📈', show: isManagement },
-        // Admin only
-        { path: '/users', label: t('nav.users'), icon: '⚙️', show: isAdmin },
-    ].filter(item => item.show);
-
-    const sidebarClass = [
-        'sidebar',
-        collapsed ? 'collapsed' : '',
-        mobileOpen ? 'mobile-open' : '',
-    ].filter(Boolean).join(' ');
-
-    return (
-        <aside className={sidebarClass}>
-            <div className="sidebar-header">
-                <div className="sidebar-logo-icon">V</div>
-                {!collapsed && <span className="sidebar-logo">Vimiss</span>}
-            </div>
-            <nav className="sidebar-nav">
-                {navItems.map(item => (
-                    <Link
-                        key={item.path}
-                        to={item.path}
-                        className={`sidebar-nav-item ${location.pathname === item.path ? 'active' : ''}`}
-                        onClick={onMobileClose}
-                    >
-                        <span className="nav-icon">{item.icon}</span>
-                        {!collapsed && <span>{item.label}</span>}
-                    </Link>
-                ))}
-            </nav>
-            <div className="sidebar-footer">
-                <Link
-                    to="/profile"
-                    className={`sidebar-nav-item ${location.pathname === '/profile' ? 'active' : ''}`}
-                    onClick={onMobileClose}
-                >
-                    <span className="nav-icon">👤</span>
-                    {!collapsed && <span>{t('nav.profile')}</span>}
-                </Link>
-            </div>
-        </aside>
-    );
-};
-
-// ============================================================================
-// Topbar Component
-// ============================================================================
-const Topbar = ({ user, onLogout, onMenuClick, sidebarCollapsed, onToggleSidebar }) => {
-    const { t, locale, setLocale } = useI18n();
-
-    const getInitials = (name) => {
-        return name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '?';
+    const handleChange = (index, val) => {
+        const digit = val.replace(/\D/g, '').slice(-1);
+        const newCode = [...value];
+        newCode[index] = digit;
+        onChange(newCode);
+        if (digit && index < 5) refs[index + 1].current?.focus();
     };
 
-    return (
-        <header className="topbar">
-            <div className="topbar-left">
-                <button className="topbar-toggle" onClick={onMenuClick} title="Menu">
-                    ☰
-                </button>
-                <button className="topbar-toggle" onClick={onToggleSidebar} title="Toggle sidebar" style={{ display: 'none' }}>
-                    {sidebarCollapsed ? '→' : '←'}
-                </button>
-            </div>
-            <div className="topbar-right">
-                <div className="lang-switcher">
-                    <button
-                        className={`lang-btn ${locale === 'vi' ? 'active' : ''}`}
-                        onClick={() => setLocale('vi')}
-                    >
-                        VI
-                    </button>
-                    <button
-                        className={`lang-btn ${locale === 'en' ? 'active' : ''}`}
-                        onClick={() => setLocale('en')}
-                    >
-                        EN
-                    </button>
-                </div>
-                <div className="topbar-user">
-                    <div>
-                        <div className="topbar-user-name">{user?.name}</div>
-                        <div className="topbar-user-role">{t(`user.roles.${user?.role}`) || user?.role}</div>
-                    </div>
-                    <div className="topbar-avatar">{getInitials(user?.name)}</div>
-                </div>
-                <button className="btn btn-ghost btn-sm" onClick={onLogout}>
-                    {t('auth.logout')}
-                </button>
-            </div>
-        </header>
-    );
-};
-
-// ============================================================================
-// Admin Layout
-// ============================================================================
-const AdminLayout = ({ children, title }) => {
-    const { user, logout } = useAuth();
-    const navigate = useNavigate();
-    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-    const [sidebarMobileOpen, setSidebarMobileOpen] = useState(false);
-
-    const handleLogout = async () => {
-        try {
-            await logout();
-            navigate('/login');
-        } catch (error) {
-            console.error('Logout failed', error);
+    const handleKeyDown = (index, e) => {
+        if (e.key === 'Backspace' && !value[index] && index > 0) {
+            refs[index - 1].current?.focus();
         }
     };
 
-    useEffect(() => {
-        setSidebarMobileOpen(false);
-    }, [title]);
+    const handlePaste = (e) => {
+        e.preventDefault();
+        const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+        const newCode = [...value];
+        for (let i = 0; i < 6; i++) newCode[i] = pasted[i] || '';
+        onChange(newCode);
+        refs[Math.min(pasted.length, 5)].current?.focus();
+    };
 
     return (
-        <div className="admin-layout">
-            {sidebarMobileOpen && (
-                <div
-                    className="sidebar-overlay"
-                    onClick={() => setSidebarMobileOpen(false)}
-                />
-            )}
-            <Sidebar
-                collapsed={sidebarCollapsed}
-                mobileOpen={sidebarMobileOpen}
-                onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-                onMobileClose={() => setSidebarMobileOpen(false)}
-                user={user}
-            />
-            <div className={`admin-main ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
-                <Topbar
-                    user={user}
-                    onLogout={handleLogout}
-                    onMenuClick={() => setSidebarMobileOpen(!sidebarMobileOpen)}
-                    sidebarCollapsed={sidebarCollapsed}
-                    onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
-                />
-                <main className="admin-content">
-                    {title && (
-                        <div className="page-header">
-                            <h1 className="page-title">{title}</h1>
+        <div className="otp-container" onPaste={handlePaste}>
+            {value.map((digit, i) => (
+                <input key={i} ref={refs[i]} type="text" inputMode="numeric" maxLength={1}
+                    className={`otp-input ${error ? 'otp-error' : ''}`}
+                    value={digit} onChange={e => handleChange(i, e.target.value)}
+                    onKeyDown={e => handleKeyDown(i, e)} disabled={disabled} />
+            ))}
+        </div>
+    );
+};
+
+// ============================================================================
+// Landing Page (Public)
+// ============================================================================
+const LandingPage = () => {
+    const { t, locale, setLocale } = useI18n();
+    const { user } = useAuth();
+
+    return (
+        <div className="landing-page">
+            {/* Navbar */}
+            <nav className="landing-nav">
+                <div className="landing-nav-inner">
+                    <div className="landing-nav-brand">
+                        <img src="/images/logo/vimiss_logo_sologan.png" alt="Vimiss" style={{ height: 40 }} />
+                    </div>
+                    <div className="landing-nav-links">
+                        <a href="#features" className="landing-nav-link">{t('landing.navAbout')}</a>
+                        <a href="#stats" className="landing-nav-link">{t('landing.navServices')}</a>
+                        <a href="#contact" className="landing-nav-link">{t('landing.navContact')}</a>
+                        <div className="lang-switcher" style={{ marginLeft: '0.5rem' }}>
+                            <button className={`lang-btn ${locale === 'vi' ? 'active' : ''}`} onClick={() => setLocale('vi')}>VI</button>
+                            <button className={`lang-btn ${locale === 'en' ? 'active' : ''}`} onClick={() => setLocale('en')}>EN</button>
                         </div>
-                    )}
-                    <div className="page-body">
+                        {user ? (
+                            <Link to="/dashboard" className="btn btn-primary btn-sm" style={{ marginLeft: '0.5rem' }}>Dashboard</Link>
+                        ) : (
+                            <>
+                                <Link to="/auth/login" className="btn btn-outline-light btn-sm" style={{ marginLeft: '0.5rem' }}>{t('landing.ctaLogin')}</Link>
+                                <Link to="/auth/register" className="btn btn-cta btn-sm" style={{ marginLeft: '0.5rem' }}>{t('landing.ctaRegister')}</Link>
+                            </>
+                        )}
+                    </div>
+                </div>
+            </nav>
+
+            {/* Hero */}
+            <section className="landing-hero">
+                <div className="landing-hero-content">
+                    <h1 className="landing-hero-title">{t('landing.heroTitle')}</h1>
+                    <p className="landing-hero-subtitle">{t('landing.heroSubtitle')}</p>
+                    <div className="landing-hero-actions">
+                        <Link to="/auth/register" className="btn btn-cta btn-lg">{t('landing.ctaRegister')}</Link>
+                        <Link to="/auth/login" className="btn btn-outline-light btn-lg">{t('landing.ctaLogin')}</Link>
+                    </div>
+                </div>
+            </section>
+
+            {/* Features */}
+            <section id="features" className="landing-section">
+                <div className="landing-section-inner">
+                    <h2 className="landing-section-title">{t('landing.featuresTitle')}</h2>
+                    <div className="landing-features-grid">
+                        {[
+                            { icon: '🎓', title: t('landing.feature1Title'), desc: t('landing.feature1Desc') },
+                            { icon: '📋', title: t('landing.feature2Title'), desc: t('landing.feature2Desc') },
+                            { icon: '🤝', title: t('landing.feature3Title'), desc: t('landing.feature3Desc') },
+                            { icon: '🌍', title: t('landing.feature4Title'), desc: t('landing.feature4Desc') },
+                        ].map((f, i) => (
+                            <div key={i} className="landing-feature-card">
+                                <div className="landing-feature-icon">{f.icon}</div>
+                                <h3 className="landing-feature-title">{f.title}</h3>
+                                <p className="landing-feature-desc">{f.desc}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* Stats */}
+            <section id="stats" className="landing-section landing-section-dark">
+                <div className="landing-section-inner">
+                    <h2 className="landing-section-title" style={{ color: '#fff' }}>{t('landing.statsTitle')}</h2>
+                    <div className="landing-stats-grid">
+                        {[
+                            { value: '2,000+', label: t('landing.statStudents') },
+                            { value: '150+', label: t('landing.statUniversities') },
+                            { value: '30+', label: t('landing.statCountries') },
+                            { value: '95%', label: t('landing.statSuccessRate') },
+                        ].map((s, i) => (
+                            <div key={i} className="landing-stat-item">
+                                <div className="landing-stat-value">{s.value}</div>
+                                <div className="landing-stat-label">{s.label}</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* CTA */}
+            <section className="landing-section landing-cta-section">
+                <div className="landing-section-inner" style={{ textAlign: 'center' }}>
+                    <h2 className="landing-section-title">{t('landing.ctaTitle')}</h2>
+                    <p className="landing-cta-desc">{t('landing.ctaDesc')}</p>
+                    <Link to="/auth/register" className="btn btn-cta btn-lg">{t('landing.ctaButton')}</Link>
+                </div>
+            </section>
+
+            {/* Footer */}
+            <footer id="contact" className="landing-footer">
+                <div className="landing-footer-inner">
+                    <div className="landing-footer-col">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                            <img src="/images/logo/vimiss_logo_sologan.png" alt="Vimiss" style={{ height: 36 }} />
+                        </div>
+                        <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.875rem', lineHeight: 1.6 }}>{t('landing.footerDesc')}</p>
+                    </div>
+                    <div className="landing-footer-col">
+                        <h4 style={{ color: '#fff', marginBottom: '0.75rem' }}>{t('landing.footerQuickLinks')}</h4>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            <a href="#features" className="landing-footer-link">{t('landing.navAbout')}</a>
+                            <a href="#stats" className="landing-footer-link">{t('landing.navServices')}</a>
+                            <Link to="/auth/login" className="landing-footer-link">{t('landing.ctaLogin')}</Link>
+                            <Link to="/auth/register" className="landing-footer-link">{t('landing.ctaRegister')}</Link>
+                        </div>
+                    </div>
+                    <div className="landing-footer-col">
+                        <h4 style={{ color: '#fff', marginBottom: '0.75rem' }}>{t('landing.footerContact')}</h4>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', color: 'rgba(255,255,255,0.7)', fontSize: '0.875rem' }}>
+                            <span>📧 contact@vimiss.vn</span>
+                            <span>📞 (+84) 28 1234 5678</span>
+                            <span>📍 TP. Hồ Chí Minh, Việt Nam</span>
+                        </div>
+                    </div>
+                </div>
+                <div className="landing-footer-bottom">
+                    <p>{t('landing.footerRights')}</p>
+                </div>
+            </footer>
+        </div>
+    );
+};
+
+// ============================================================================
+// Auth Layout (two-column for Login; single card for others)
+// ============================================================================
+const AuthLayout = ({ children, twoColumn = false }) => {
+    const { t } = useI18n();
+
+    if (twoColumn) {
+        return (
+            <div className="auth-layout-two-col">
+                <div className="auth-panel-left">
+                    <div className="auth-panel-left-content">
+                        <div className="auth-panel-brand">
+                            <div className="auth-brand-logo">VIMISS</div>
+                        </div>
+                        <h1 className="auth-panel-left-title">Hành Trình Du Học<br />Bắt Đầu Từ Đây</h1>
+                        <p className="auth-panel-left-subtitle">
+                            Vimiss kết nối học sinh Việt Nam với các trường đại học hàng đầu thế giới. 
+                            Tư vấn chuyên nghiệp, quản lý hồ sơ hiệu quả, và hỗ trợ toàn diện trên mọi chặng đường.
+                        </p>
+                        <ul className="auth-panel-left-features">
+                            <li className="auth-panel-feature">
+                                <svg className="feature-check" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                <span>Mentor Chuyên Nghiệp</span>
+                            </li>
+                            <li className="auth-panel-feature">
+                                <svg className="feature-check" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                <span>Quản Lý Hồ Sơ Thông Minh</span>
+                            </li>
+                            <li className="auth-panel-feature">
+                                <svg className="feature-check" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                <span>Hỗ Trợ Toàn Diện</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div className="auth-panel-right">
+                    <div className="auth-card-inner">
                         {children}
                     </div>
-                </main>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="auth-layout">
+            <div className="auth-card">
+                <div className="auth-header auth-header-logo">
+                    <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center', textDecoration: 'none' }}>
+                        <img src="/images/logo/vimiss_logo_sologan.png" alt="Vimiss" style={{ height: 44 }} />
+                    </Link>
+                </div>
+                {children}
             </div>
         </div>
     );
 };
 
 // ============================================================================
-// Login Page
+// Login Page (two-column layout)
 // ============================================================================
 const LoginPage = () => {
     const [email, setEmail] = useState('');
@@ -325,7 +393,7 @@ const LoginPage = () => {
     const [fieldErrors, setFieldErrors] = useState({});
     const [isLoading, setIsLoading] = useState(false);
     const { login } = useAuth();
-    const { t } = useI18n();
+    const { t, locale, setLocale } = useI18n();
     const navigate = useNavigate();
     const emailRef = useRef(null);
     const passwordRef = useRef(null);
@@ -376,77 +444,293 @@ const LoginPage = () => {
     };
 
     return (
-        <div className="auth-layout">
-            <div className="auth-card">
-                <div className="auth-header auth-header-logo">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}>
-                        <div className="sidebar-logo-icon" style={{ width: 40, height: 40, fontSize: '1rem' }}>V</div>
-                        <span className="auth-logo-text">Vimiss</span>
-                    </div>
-                    <p className="auth-logo-subtitle">Study Abroad Management</p>
+        <AuthLayout twoColumn>
+            <div className="auth-lang-toggle">
+                <button className={`lang-btn ${locale === 'vi' ? 'active' : ''}`} onClick={() => setLocale('vi')}>VI</button>
+                <button className={`lang-btn ${locale === 'en' ? 'active' : ''}`} onClick={() => setLocale('en')}>EN</button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="auth-form">
+                <h2 className="auth-title text-center">{t('auth.welcomeBack')}</h2>
+                <p className="auth-description">{t('auth.loginDesc')}</p>
+
+                {error && <div className="alert alert-error mb-4">{error}</div>}
+
+                <div className="form-group">
+                    <label htmlFor="email">{t('auth.emailAddress')} <span className="text-error">*</span></label>
+                    <input
+                        ref={emailRef}
+                        id="email"
+                        type="email"
+                        className={`form-input ${fieldErrors.email ? 'form-input-error' : ''}`}
+                        value={email}
+                        onChange={e => handleFieldChange('email', e.target.value, setEmail)}
+                        placeholder={t('auth.enterEmail')}
+                        autoFocus
+                        disabled={isLoading}
+                    />
+                    {fieldErrors.email && <p className="form-error-text">{fieldErrors.email}</p>}
                 </div>
 
-                <form onSubmit={handleSubmit} className="auth-form">
-                    <h2 className="auth-title text-center">{t('auth.welcomeBack')}</h2>
-                    <p className="auth-description">{t('auth.loginDesc')}</p>
+                <div className="form-group">
+                    <label htmlFor="password">{t('auth.password')} <span className="text-error">*</span></label>
+                    <div className="form-input-wrapper">
+                        <input
+                            ref={passwordRef}
+                            id="password"
+                            type={showPassword ? 'text' : 'password'}
+                            className={`form-input ${fieldErrors.password ? 'form-input-error' : ''}`}
+                            value={password}
+                            onChange={e => handleFieldChange('password', e.target.value, setPassword)}
+                            placeholder={t('auth.enterPassword')}
+                            disabled={isLoading}
+                        />
+                        <button
+                            type="button"
+                            className="form-toggle-password"
+                            onClick={() => setShowPassword(!showPassword)}
+                            tabIndex={-1}
+                        >
+                            {showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
+                        </button>
+                    </div>
+                    {fieldErrors.password && <p className="form-error-text">{fieldErrors.password}</p>}
+                </div>
 
+                <button type="submit" className="btn btn-primary btn-block mb-4" disabled={isLoading}>
+                    {isLoading ? (
+                        <><span className="btn-spinner"></span> {t('auth.sending')}</>
+                    ) : t('auth.loginButton')}
+                </button>
+
+                <div className="auth-links">
+                    <Link to="/auth/forgot-password" className="text-sm text-primary">{t('auth.forgotPassword')}</Link>
+                    <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                        {t('auth.dontHaveAccount')} <Link to="/auth/register" className="text-primary">{t('auth.register')}</Link>
+                    </span>
+                </div>
+            </form>
+        </AuthLayout>
+    );
+};
+
+// ============================================================================
+// Register Page (2-step: request code → fill form)
+// ============================================================================
+const RegisterPage = () => {
+    const [step, setStep] = useState(1);
+    const [email, setEmail] = useState('');
+    const [name, setName] = useState('');
+    const [verificationCode, setVerificationCode] = useState(['', '', '', '', '', '']);
+    const [password, setPassword] = useState('');
+    const [passwordConfirmation, setPasswordConfirmation] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [error, setError] = useState(null);
+    const [fieldErrors, setFieldErrors] = useState({});
+    const [isLoading, setIsLoading] = useState(false);
+    const [successMessage, setSuccessMessage] = useState(null);
+    const [countdown, setCountdown] = useState(0);
+    const { t, locale, setLocale } = useI18n();
+    const { login } = useAuth();
+    const navigate = useNavigate();
+
+    const emailRef = useRef(null);
+    const nameRef = useRef(null);
+    const passwordRef = useRef(null);
+    const confirmPasswordRef = useRef(null);
+
+    useEffect(() => {
+        if (countdown > 0) {
+            const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [countdown]);
+
+    const handleRequestCode = async (e) => {
+        e.preventDefault();
+        setError(null);
+        setFieldErrors({});
+        const errors = {};
+        if (!name.trim()) errors.name = t('auth.nameRequired');
+        if (!email.trim()) errors.email = t('auth.emailRequired');
+        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = t('auth.emailInvalid');
+        if (Object.keys(errors).length) {
+            setFieldErrors(errors);
+            if (errors.name) nameRef.current?.focus();
+            else emailRef.current?.focus();
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            await axios.get('/sanctum/csrf-cookie');
+            await axios.post('/register/request-code', { email, name });
+        } catch (err) { /* generic message */ }
+        setSuccessMessage(t('auth.invitationCodeSent'));
+        setStep(2);
+        setCountdown(60);
+        setIsLoading(false);
+    };
+
+    const handleRegister = async (e) => {
+        e.preventDefault();
+        setError(null);
+        setFieldErrors({});
+        const errors = {};
+        const codeString = verificationCode.join('');
+        if (codeString.length !== 6) errors.verificationCode = t('auth.codeRequired');
+        if (!password) errors.password = t('auth.passwordRequired');
+        else if (password.length < 8) errors.password = t('auth.passwordTooShort');
+        if (!passwordConfirmation) errors.passwordConfirmation = t('auth.confirmPasswordRequired');
+        else if (password !== passwordConfirmation) {
+            errors.passwordConfirmation = t('auth.passwordMismatch');
+            errors.password = t('auth.passwordMismatch');
+        }
+        if (Object.keys(errors).length) {
+            setFieldErrors(errors);
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            await axios.post('/register', {
+                email,
+                name,
+                verification_code: codeString,
+                password,
+                password_confirmation: passwordConfirmation,
+            });
+            // Auto-login was handled server-side, fetch user
+            setSuccessMessage(t('auth.registerSuccess'));
+            // Small delay so user sees success
+            setTimeout(() => {
+                window.location.href = '/dashboard';
+            }, 1000);
+        } catch (err) {
+            const errs = err.response?.data?.errors;
+            if (errs?.verification_code) {
+                setFieldErrors({ verificationCode: errs.verification_code[0] });
+            } else if (errs?.email) {
+                setFieldErrors({ email: errs.email[0] });
+            } else if (errs?.password) {
+                setFieldErrors({ password: errs.password[0] });
+            } else {
+                setError(err.response?.data?.message || t('auth.registerFailed'));
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleResendCode = async () => {
+        if (countdown > 0 || isLoading) return;
+        setIsLoading(true);
+        try { await axios.post('/register/request-code', { email, name }); } catch (err) { /* ignore */ }
+        setSuccessMessage(t('auth.verificationCodeResent'));
+        setCountdown(60);
+        setIsLoading(false);
+    };
+
+    return (
+        <AuthLayout>
+            <div className="auth-lang-toggle" style={{ position: 'absolute', top: '1rem', right: '1rem' }}>
+                <button className={`lang-btn ${locale === 'vi' ? 'active' : ''}`} onClick={() => setLocale('vi')}>VI</button>
+                <button className={`lang-btn ${locale === 'en' ? 'active' : ''}`} onClick={() => setLocale('en')}>EN</button>
+            </div>
+
+            {step === 1 ? (
+                <form onSubmit={handleRequestCode} className="auth-form">
+                    <h2 className="auth-title text-center">{t('auth.registerTitle')}</h2>
+                    <p className="auth-description">{t('auth.registerDesc')}</p>
                     {error && <div className="alert alert-error mb-4">{error}</div>}
 
                     <div className="form-group">
-                        <label htmlFor="email">{t('auth.emailAddress')} <span className="text-error">*</span></label>
-                        <input
-                            ref={emailRef}
-                            id="email"
-                            type="email"
-                            className={`form-input ${fieldErrors.email ? 'form-input-error' : ''}`}
-                            value={email}
-                            onChange={e => handleFieldChange('email', e.target.value, setEmail)}
-                            placeholder={t('auth.enterEmail')}
-                            autoFocus
-                            disabled={isLoading}
-                        />
-                        {fieldErrors.email && <p className="form-error-text">{fieldErrors.email}</p>}
+                        <label htmlFor="name">{t('auth.fullName')} <span className="text-error">*</span></label>
+                        <input ref={nameRef} id="name" type="text"
+                            className={`form-input ${fieldErrors.name ? 'form-input-error' : ''}`}
+                            value={name} onChange={e => { setName(e.target.value); if (fieldErrors.name) setFieldErrors(prev => ({ ...prev, name: null })); }}
+                            placeholder={t('auth.enterFullName')} autoFocus disabled={isLoading} />
+                        {fieldErrors.name && <p className="form-error-text">{fieldErrors.name}</p>}
                     </div>
 
                     <div className="form-group">
-                        <label htmlFor="password">{t('auth.password')} <span className="text-error">*</span></label>
+                        <label htmlFor="reg-email">{t('auth.emailAddress')} <span className="text-error">*</span></label>
+                        <input ref={emailRef} id="reg-email" type="email"
+                            className={`form-input ${fieldErrors.email ? 'form-input-error' : ''}`}
+                            value={email} onChange={e => { setEmail(e.target.value); if (fieldErrors.email) setFieldErrors(prev => ({ ...prev, email: null })); }}
+                            placeholder={t('auth.enterEmail')} disabled={isLoading} />
+                        {fieldErrors.email && <p className="form-error-text">{fieldErrors.email}</p>}
+                    </div>
+
+                    <button type="submit" className="btn btn-primary btn-block mb-4" disabled={isLoading}>
+                        {isLoading ? <><span className="btn-spinner"></span> {t('auth.sending')}</> : t('auth.sendInvitationCode')}
+                    </button>
+
+                    <div className="auth-links">
+                        <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                            {t('auth.alreadyHaveAccount')} <Link to="/auth/login" className="text-primary">{t('auth.login')}</Link>
+                        </span>
+                    </div>
+                </form>
+            ) : (
+                <form onSubmit={handleRegister} className="auth-form">
+                    <h2 className="auth-title text-center">{t('auth.registerTitle')}</h2>
+                    {successMessage && <div className="alert alert-success mb-4">{successMessage}</div>}
+                    {error && <div className="alert alert-error mb-4">{error}</div>}
+
+                    <div className="form-group">
+                        <label>{t('auth.verificationCode')} <span className="text-error">*</span></label>
+                        <p className="text-sm" style={{ color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>{t('auth.enterInvitationCode')}</p>
+                        <OtpInput value={verificationCode} onChange={(newCode) => { setVerificationCode(newCode); if (fieldErrors.verificationCode) setFieldErrors(prev => ({ ...prev, verificationCode: null })); }}
+                            disabled={isLoading} error={!!fieldErrors.verificationCode} />
+                        {fieldErrors.verificationCode && <p className="form-error-text text-center">{fieldErrors.verificationCode}</p>}
+                        <div className="text-center mt-2">
+                            <button type="button" className="btn btn-ghost btn-sm" onClick={handleResendCode} disabled={countdown > 0 || isLoading}>
+                                {countdown > 0 ? t('auth.resendIn', { seconds: countdown }) : t('auth.resendCode')}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="form-group">
+                        <label htmlFor="reg-password">{t('auth.newPassword')} <span className="text-error">*</span></label>
                         <div className="form-input-wrapper">
-                            <input
-                                ref={passwordRef}
-                                id="password"
-                                type={showPassword ? 'text' : 'password'}
+                            <input ref={passwordRef} id="reg-password" type={showPassword ? 'text' : 'password'}
                                 className={`form-input ${fieldErrors.password ? 'form-input-error' : ''}`}
-                                value={password}
-                                onChange={e => handleFieldChange('password', e.target.value, setPassword)}
-                                placeholder={t('auth.enterPassword')}
-                                disabled={isLoading}
-                            />
-                            <button
-                                type="button"
-                                className="form-toggle-password"
-                                onClick={() => setShowPassword(!showPassword)}
-                                tabIndex={-1}
-                            >
+                                value={password} onChange={e => { setPassword(e.target.value); if (fieldErrors.password) setFieldErrors(prev => ({ ...prev, password: null })); }}
+                                disabled={isLoading} />
+                            <button type="button" className="form-toggle-password" onClick={() => setShowPassword(!showPassword)} tabIndex={-1}>
                                 {showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                             </button>
                         </div>
                         {fieldErrors.password && <p className="form-error-text">{fieldErrors.password}</p>}
                     </div>
 
-                    <button type="submit" className="btn btn-primary btn-block mb-4" disabled={isLoading}>
-                        {isLoading ? (
-                            <><span className="btn-spinner"></span> {t('auth.sending')}</>
-                        ) : t('auth.loginButton')}
-                    </button>
+                    <div className="form-group">
+                        <label htmlFor="reg-confirm-password">{t('auth.confirmPassword')} <span className="text-error">*</span></label>
+                        <div className="form-input-wrapper">
+                            <input ref={confirmPasswordRef} id="reg-confirm-password" type={showConfirmPassword ? 'text' : 'password'}
+                                className={`form-input ${fieldErrors.passwordConfirmation ? 'form-input-error' : ''}`}
+                                value={passwordConfirmation} onChange={e => { setPasswordConfirmation(e.target.value); if (fieldErrors.passwordConfirmation) setFieldErrors(prev => ({ ...prev, passwordConfirmation: null })); }}
+                                disabled={isLoading} />
+                            <button type="button" className="form-toggle-password" onClick={() => setShowConfirmPassword(!showConfirmPassword)} tabIndex={-1}>
+                                {showConfirmPassword ? t('auth.hidePassword') : t('auth.showPassword')}
+                            </button>
+                        </div>
+                        {fieldErrors.passwordConfirmation && <p className="form-error-text">{fieldErrors.passwordConfirmation}</p>}
+                    </div>
 
-                    <div className="text-center">
-                        <Link to="/forgot-password" className="text-sm text-primary" style={{ textDecoration: 'none' }}>
-                            {t('auth.forgotPassword')}
-                        </Link>
+                    <button type="submit" className="btn btn-primary btn-block mb-4" disabled={isLoading}>
+                        {isLoading ? <><span className="btn-spinner"></span> {t('auth.registering')}</> : t('auth.registerButton')}
+                    </button>
+                    <div className="auth-links">
+                        <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                            {t('auth.alreadyHaveAccount')} <Link to="/auth/login" className="text-primary">{t('auth.login')}</Link>
+                        </span>
                     </div>
                 </form>
-            </div>
-        </div>
+            )}
+        </AuthLayout>
     );
 };
 
@@ -470,7 +754,6 @@ const ForgotPasswordPage = () => {
     const navigate = useNavigate();
 
     const emailRef = useRef(null);
-    const codeRefs = [useRef(null), useRef(null), useRef(null), useRef(null), useRef(null), useRef(null)];
     const passwordRef = useRef(null);
     const confirmPasswordRef = useRef(null);
 
@@ -496,6 +779,7 @@ const ForgotPasswordPage = () => {
 
         setIsLoading(true);
         try {
+            await axios.get('/sanctum/csrf-cookie');
             await axios.post('/forgot-password/request', { email });
         } catch (err) { /* ignore - generic message */ }
         setSuccessMessage(t('auth.codeSentGeneric'));
@@ -520,9 +804,6 @@ const ForgotPasswordPage = () => {
         }
         if (Object.keys(errors).length) {
             setFieldErrors(errors);
-            if (errors.verificationCode) codeRefs[0].current?.focus();
-            else if (errors.password) passwordRef.current?.focus();
-            else confirmPasswordRef.current?.focus();
             return;
         }
 
@@ -535,15 +816,13 @@ const ForgotPasswordPage = () => {
                 password_confirmation: passwordConfirmation,
             });
             setSuccessMessage(response.data.message || t('auth.passwordResetSuccess'));
-            setTimeout(() => navigate('/login'), 2000);
+            setTimeout(() => navigate('/auth/login'), 2000);
         } catch (err) {
             const errs = err.response?.data?.errors;
             if (errs?.verification_code) {
                 setFieldErrors({ verificationCode: errs.verification_code[0] });
-                codeRefs[0].current?.focus();
             } else if (errs?.password) {
                 setFieldErrors({ password: errs.password[0] });
-                passwordRef.current?.focus();
             } else {
                 setError(err.response?.data?.message || t('auth.failedToResetPassword'));
             }
@@ -561,121 +840,251 @@ const ForgotPasswordPage = () => {
         setIsLoading(false);
     };
 
-    const handleCodeChange = (index, value) => {
-        const digit = value.replace(/\D/g, '').slice(-1);
-        const newCode = [...verificationCode];
-        newCode[index] = digit;
-        setVerificationCode(newCode);
-        if (fieldErrors.verificationCode) setFieldErrors(prev => ({ ...prev, verificationCode: null }));
-        if (digit && index < 5) codeRefs[index + 1].current?.focus();
-    };
+    return (
+        <AuthLayout>
+            {step === 1 ? (
+                <form onSubmit={handleRequestCode} className="auth-form">
+                    <h2 className="auth-title text-center">{t('auth.forgotPassword')}</h2>
+                    <p className="auth-description">{t('auth.forgotPasswordDesc')}</p>
+                    {error && <div className="alert alert-error mb-4">{error}</div>}
+                    <div className="form-group">
+                        <label htmlFor="fp-email">{t('auth.emailAddress')} <span className="text-error">*</span></label>
+                        <input ref={emailRef} id="fp-email" type="email" className={`form-input ${fieldErrors.email ? 'form-input-error' : ''}`}
+                            value={email} onChange={e => { setEmail(e.target.value); if (fieldErrors.email) setFieldErrors({}); }}
+                            placeholder={t('auth.enterEmail')} autoFocus disabled={isLoading} />
+                        {fieldErrors.email && <p className="form-error-text">{fieldErrors.email}</p>}
+                    </div>
+                    <button type="submit" className="btn btn-primary btn-block mb-4" disabled={isLoading}>
+                        {isLoading ? <><span className="btn-spinner"></span> {t('auth.sending')}</> : t('auth.continue')}
+                    </button>
+                    <div className="text-center">
+                        <Link to="/auth/login" className="text-sm text-primary" style={{ textDecoration: 'none' }}>{t('auth.backToLogin')}</Link>
+                    </div>
+                </form>
+            ) : (
+                <form onSubmit={handleResetPassword} className="auth-form">
+                    <h2 className="auth-title text-center">{t('auth.resetPassword')}</h2>
+                    {successMessage && <div className="alert alert-success mb-4">{successMessage}</div>}
+                    {error && <div className="alert alert-error mb-4">{error}</div>}
 
-    const handleCodeKeyDown = (index, e) => {
-        if (e.key === 'Backspace' && !verificationCode[index] && index > 0) {
-            codeRefs[index - 1].current?.focus();
-        }
-    };
+                    <div className="form-group">
+                        <label>{t('auth.verificationCode')} <span className="text-error">*</span></label>
+                        <p className="text-sm" style={{ color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>{t('auth.enterVerificationCode')}</p>
+                        <OtpInput value={verificationCode} onChange={(newCode) => { setVerificationCode(newCode); if (fieldErrors.verificationCode) setFieldErrors(prev => ({ ...prev, verificationCode: null })); }}
+                            disabled={isLoading} error={!!fieldErrors.verificationCode} />
+                        {fieldErrors.verificationCode && <p className="form-error-text text-center">{fieldErrors.verificationCode}</p>}
+                        <div className="text-center mt-2">
+                            <button type="button" className="btn btn-ghost btn-sm" onClick={handleResendCode} disabled={countdown > 0 || isLoading}>
+                                {countdown > 0 ? t('auth.resendIn', { seconds: countdown }) : t('auth.resendCode')}
+                            </button>
+                        </div>
+                    </div>
 
-    const handleCodePaste = (e) => {
-        e.preventDefault();
-        const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
-        const newCode = [...verificationCode];
-        for (let i = 0; i < 6; i++) newCode[i] = pasted[i] || '';
-        setVerificationCode(newCode);
-        codeRefs[Math.min(pasted.length, 5)].current?.focus();
+                    <div className="form-group">
+                        <label htmlFor="fp-password">{t('auth.newPassword')} <span className="text-error">*</span></label>
+                        <div className="form-input-wrapper">
+                            <input ref={passwordRef} id="fp-password" type={showPassword ? 'text' : 'password'}
+                                className={`form-input ${fieldErrors.password ? 'form-input-error' : ''}`}
+                                value={password} onChange={e => { setPassword(e.target.value); if (fieldErrors.password) setFieldErrors(prev => ({ ...prev, password: null })); }}
+                                disabled={isLoading} />
+                            <button type="button" className="form-toggle-password" onClick={() => setShowPassword(!showPassword)} tabIndex={-1}>
+                                {showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
+                            </button>
+                        </div>
+                        {fieldErrors.password && <p className="form-error-text">{fieldErrors.password}</p>}
+                    </div>
+
+                    <div className="form-group">
+                        <label htmlFor="fp-confirm-password">{t('auth.confirmPassword')} <span className="text-error">*</span></label>
+                        <div className="form-input-wrapper">
+                            <input ref={confirmPasswordRef} id="fp-confirm-password" type={showConfirmPassword ? 'text' : 'password'}
+                                className={`form-input ${fieldErrors.passwordConfirmation ? 'form-input-error' : ''}`}
+                                value={passwordConfirmation} onChange={e => { setPasswordConfirmation(e.target.value); if (fieldErrors.passwordConfirmation) setFieldErrors(prev => ({ ...prev, passwordConfirmation: null })); }}
+                                disabled={isLoading} />
+                            <button type="button" className="form-toggle-password" onClick={() => setShowConfirmPassword(!showConfirmPassword)} tabIndex={-1}>
+                                {showConfirmPassword ? t('auth.hidePassword') : t('auth.showPassword')}
+                            </button>
+                        </div>
+                        {fieldErrors.passwordConfirmation && <p className="form-error-text">{fieldErrors.passwordConfirmation}</p>}
+                    </div>
+
+                    <button type="submit" className="btn btn-primary btn-block mb-4" disabled={isLoading}>
+                        {isLoading ? <><span className="btn-spinner"></span> {t('auth.resetting')}</> : t('auth.resetPassword')}
+                    </button>
+                    <div className="text-center">
+                        <Link to="/auth/login" className="text-sm text-primary" style={{ textDecoration: 'none' }}>{t('auth.backToLogin')}</Link>
+                    </div>
+                </form>
+            )}
+        </AuthLayout>
+    );
+};
+
+// ============================================================================
+// Sidebar Component
+// ============================================================================
+const Sidebar = ({ collapsed, mobileOpen, onToggle, onMobileClose, user }) => {
+    const location = useLocation();
+    const { t } = useI18n();
+
+    const isAdmin = user?.role === 'admin';
+    const isDirector = user?.role === 'director';
+    const isMentor = user?.role === 'mentor';
+    const isStudent = user?.role === 'student';
+    const isManagement = isAdmin || isDirector;
+
+    const navItems = [
+        { path: '/dashboard', label: t('nav.dashboard'), icon: '📊', show: true },
+        { path: '/my-mentor', label: t('nav.myMentor'), icon: '👨‍🏫', show: isStudent },
+        { path: '/mentor-directory', label: 'Mentor Directory', icon: '📖', show: isStudent },
+        { path: '/my-applications', label: t('nav.applications'), icon: '📋', show: isStudent || isMentor },
+        { path: '/my-students', label: t('nav.myStudents'), icon: '👩‍🎓', show: isMentor },
+        { path: '/scholarships', label: 'Scholarships', icon: '🎓', show: true },
+        { path: '/students', label: t('nav.students'), icon: '🎓', show: isManagement },
+        { path: '/mentors', label: t('nav.mentors'), icon: '👥', show: isManagement },
+        { path: '/mentor-assignments', label: 'Assignments', icon: '🔗', show: isAdmin },
+        { path: '/applications', label: t('nav.applications'), icon: '📁', show: isManagement },
+        { path: '/universities', label: t('nav.universities'), icon: '🏛️', show: isManagement },
+        { path: '/approvals', label: t('nav.approvals'), icon: '✅', show: isManagement },
+        { path: '/calendar', label: t('nav.calendar'), icon: '📅', show: true },
+        { path: '/notifications', label: 'Notifications', icon: '🔔', show: false },
+        { path: '/mentor-load', label: 'Mentor Load', icon: '📈', show: isManagement },
+        { path: '/reports', label: t('nav.reports'), icon: '📈', show: isManagement },
+        { path: '/users', label: t('nav.users'), icon: '⚙️', show: isAdmin },
+    ].filter(item => item.show);
+
+    const sidebarClass = [
+        'sidebar',
+        collapsed ? 'collapsed' : '',
+        mobileOpen ? 'mobile-open' : '',
+    ].filter(Boolean).join(' ');
+
+    return (
+        <aside className={sidebarClass}>
+            <div className="sidebar-header">
+                {collapsed
+                    ? <img src="/images/logo/logo_only.png" alt="Vimiss" style={{ height: 32 }} />
+                    : <img src="/images/logo/vimiss_logo_sologan.png" alt="Vimiss" style={{ height: 36 }} />
+                }
+            </div>
+            <nav className="sidebar-nav">
+                {navItems.map(item => (
+                    <Link
+                        key={item.path}
+                        to={item.path}
+                        className={`sidebar-nav-item ${location.pathname === item.path ? 'active' : ''}`}
+                        onClick={onMobileClose}
+                    >
+                        <span className="nav-icon">{item.icon}</span>
+                        {!collapsed && <span>{item.label}</span>}
+                    </Link>
+                ))}
+            </nav>
+            <div className="sidebar-footer">
+                <Link
+                    to="/profile"
+                    className={`sidebar-nav-item ${location.pathname === '/profile' ? 'active' : ''}`}
+                    onClick={onMobileClose}
+                >
+                    <span className="nav-icon">👤</span>
+                    {!collapsed && <span>{t('nav.profile')}</span>}
+                </Link>
+            </div>
+        </aside>
+    );
+};
+
+// ============================================================================
+// Topbar Component
+// ============================================================================
+const Topbar = ({ user, onLogout, onMenuClick, sidebarCollapsed, onToggleSidebar }) => {
+    const { t, locale, setLocale } = useI18n();
+    const navigate = useNavigate();
+
+    const getInitials = (name) => {
+        return name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '?';
     };
 
     return (
-        <div className="auth-layout">
-            <div className="auth-card">
-                <div className="auth-header auth-header-logo">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}>
-                        <div className="sidebar-logo-icon" style={{ width: 40, height: 40, fontSize: '1rem' }}>V</div>
-                        <span className="auth-logo-text">Vimiss</span>
-                    </div>
+        <header className="topbar">
+            <div className="topbar-left">
+                <button className="topbar-toggle" onClick={onMenuClick} title="Menu">
+                    ☰
+                </button>
+            </div>
+            <div className="topbar-right">
+                <NotificationBell onClick={() => navigate('/notifications')} />
+                <div className="lang-switcher">
+                    <button className={`lang-btn ${locale === 'vi' ? 'active' : ''}`} onClick={() => setLocale('vi')}>VI</button>
+                    <button className={`lang-btn ${locale === 'en' ? 'active' : ''}`} onClick={() => setLocale('en')}>EN</button>
                 </div>
+                <div className="topbar-user">
+                    <div>
+                        <div className="topbar-user-name">{user?.name}</div>
+                        <div className="topbar-user-role">{t(`user.roles.${user?.role}`) || user?.role}</div>
+                    </div>
+                    <div className="topbar-avatar">{getInitials(user?.name)}</div>
+                </div>
+                <button className="btn btn-ghost btn-sm" onClick={onLogout}>
+                    {t('auth.logout')}
+                </button>
+            </div>
+        </header>
+    );
+};
 
-                {step === 1 ? (
-                    <form onSubmit={handleRequestCode} className="auth-form">
-                        <h2 className="auth-title text-center">{t('auth.forgotPassword')}</h2>
-                        <p className="auth-description">{t('auth.forgotPasswordDesc')}</p>
-                        {error && <div className="alert alert-error mb-4">{error}</div>}
-                        <div className="form-group">
-                            <label htmlFor="email">{t('auth.emailAddress')} <span className="text-error">*</span></label>
-                            <input ref={emailRef} id="email" type="email" className={`form-input ${fieldErrors.email ? 'form-input-error' : ''}`}
-                                value={email} onChange={e => { setEmail(e.target.value); if (fieldErrors.email) setFieldErrors({}); }}
-                                placeholder={t('auth.enterEmail')} autoFocus disabled={isLoading} />
-                            {fieldErrors.email && <p className="form-error-text">{fieldErrors.email}</p>}
-                        </div>
-                        <button type="submit" className="btn btn-primary btn-block mb-4" disabled={isLoading}>
-                            {isLoading ? <><span className="btn-spinner"></span> {t('auth.sending')}</> : t('auth.continue')}
-                        </button>
-                        <div className="text-center">
-                            <Link to="/login" className="text-sm text-primary" style={{ textDecoration: 'none' }}>{t('auth.backToLogin')}</Link>
-                        </div>
-                    </form>
-                ) : (
-                    <form onSubmit={handleResetPassword} className="auth-form">
-                        <h2 className="auth-title text-center">{t('auth.resetPassword')}</h2>
-                        {successMessage && <div className="alert alert-success mb-4">{successMessage}</div>}
-                        {error && <div className="alert alert-error mb-4">{error}</div>}
+// ============================================================================
+// Admin Layout
+// ============================================================================
+const AdminLayout = ({ children, title }) => {
+    const { user, logout } = useAuth();
+    const navigate = useNavigate();
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+    const [sidebarMobileOpen, setSidebarMobileOpen] = useState(false);
 
-                        <div className="form-group">
-                            <label>{t('auth.verificationCode')} <span className="text-error">*</span></label>
-                            <p className="text-sm" style={{ color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>{t('auth.enterVerificationCode')}</p>
-                            <div className="otp-container" onPaste={handleCodePaste}>
-                                {verificationCode.map((digit, i) => (
-                                    <input key={i} ref={codeRefs[i]} type="text" inputMode="numeric" maxLength={1}
-                                        className={`otp-input ${fieldErrors.verificationCode ? 'otp-error' : ''}`}
-                                        value={digit} onChange={e => handleCodeChange(i, e.target.value)}
-                                        onKeyDown={e => handleCodeKeyDown(i, e)} disabled={isLoading} />
-                                ))}
-                            </div>
-                            {fieldErrors.verificationCode && <p className="form-error-text text-center">{fieldErrors.verificationCode}</p>}
-                            <div className="text-center mt-2">
-                                <button type="button" className="btn btn-ghost btn-sm" onClick={handleResendCode}
-                                    disabled={countdown > 0 || isLoading}>
-                                    {countdown > 0 ? t('auth.resendIn', { seconds: countdown }) : t('auth.resendCode')}
-                                </button>
-                            </div>
-                        </div>
+    const handleLogout = async () => {
+        try {
+            await logout();
+            navigate('/auth/login');
+        } catch (error) {
+            console.error('Logout failed', error);
+        }
+    };
 
-                        <div className="form-group">
-                            <label htmlFor="password">{t('auth.newPassword')} <span className="text-error">*</span></label>
-                            <div className="form-input-wrapper">
-                                <input ref={passwordRef} id="password" type={showPassword ? 'text' : 'password'}
-                                    className={`form-input ${fieldErrors.password ? 'form-input-error' : ''}`}
-                                    value={password} onChange={e => { setPassword(e.target.value); if (fieldErrors.password) setFieldErrors(prev => ({ ...prev, password: null })); }}
-                                    disabled={isLoading} />
-                                <button type="button" className="form-toggle-password" onClick={() => setShowPassword(!showPassword)} tabIndex={-1}>
-                                    {showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
-                                </button>
-                            </div>
-                            {fieldErrors.password && <p className="form-error-text">{fieldErrors.password}</p>}
-                        </div>
+    useEffect(() => {
+        setSidebarMobileOpen(false);
+    }, [title]);
 
-                        <div className="form-group">
-                            <label htmlFor="confirm-password">{t('auth.confirmPassword')} <span className="text-error">*</span></label>
-                            <div className="form-input-wrapper">
-                                <input ref={confirmPasswordRef} id="confirm-password" type={showConfirmPassword ? 'text' : 'password'}
-                                    className={`form-input ${fieldErrors.passwordConfirmation ? 'form-input-error' : ''}`}
-                                    value={passwordConfirmation} onChange={e => { setPasswordConfirmation(e.target.value); if (fieldErrors.passwordConfirmation) setFieldErrors(prev => ({ ...prev, passwordConfirmation: null })); }}
-                                    disabled={isLoading} />
-                                <button type="button" className="form-toggle-password" onClick={() => setShowConfirmPassword(!showConfirmPassword)} tabIndex={-1}>
-                                    {showConfirmPassword ? t('auth.hidePassword') : t('auth.showPassword')}
-                                </button>
-                            </div>
-                            {fieldErrors.passwordConfirmation && <p className="form-error-text">{fieldErrors.passwordConfirmation}</p>}
+    return (
+        <div className="admin-layout">
+            {sidebarMobileOpen && (
+                <div className="sidebar-overlay" onClick={() => setSidebarMobileOpen(false)} />
+            )}
+            <Sidebar
+                collapsed={sidebarCollapsed}
+                mobileOpen={sidebarMobileOpen}
+                onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+                onMobileClose={() => setSidebarMobileOpen(false)}
+                user={user}
+            />
+            <div className={`admin-main ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+                <Topbar
+                    user={user}
+                    onLogout={handleLogout}
+                    onMenuClick={() => setSidebarMobileOpen(!sidebarMobileOpen)}
+                    sidebarCollapsed={sidebarCollapsed}
+                    onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
+                />
+                <main className="admin-content">
+                    {title && (
+                        <div className="page-header">
+                            <h1 className="page-title">{title}</h1>
                         </div>
-
-                        <button type="submit" className="btn btn-primary btn-block mb-4" disabled={isLoading}>
-                            {isLoading ? <><span className="btn-spinner"></span> {t('auth.resetting')}</> : t('auth.resetPassword')}
-                        </button>
-                        <div className="text-center">
-                            <Link to="/login" className="text-sm text-primary" style={{ textDecoration: 'none' }}>{t('auth.backToLogin')}</Link>
-                        </div>
-                    </form>
-                )}
+                    )}
+                    <div className="page-body">
+                        {children}
+                    </div>
+                </main>
             </div>
         </div>
     );
@@ -754,7 +1163,7 @@ const ChangePasswordPage = () => {
                                 {fieldErrors.passwordConfirmation && <p className="form-error-text">{fieldErrors.passwordConfirmation}</p>}
                             </div>
                             <button type="submit" className="btn btn-primary btn-block" disabled={isLoading}>
-                                {isLoading ? <><span className="btn-spinner"></span></> : t('auth.changePassword')}
+                                {isLoading ? <span className="btn-spinner"></span> : t('auth.changePassword')}
                             </button>
                         </form>
                     </div>
@@ -811,7 +1220,6 @@ const DashboardPage = () => {
                     <div className="empty-state">
                         <div className="empty-state-icon">📭</div>
                         <div className="empty-state-title">{t('common.noData')}</div>
-                        <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Activity will appear here as you use the system.</p>
                     </div>
                 </div>
             </div>
@@ -868,7 +1276,7 @@ const ProfilePage = () => {
                     </div>
                 </div>
                 <div className="mt-4">
-                    <Link to="/change-password" className="btn btn-outline">{t('auth.changePassword')}</Link>
+                    <Link to="/settings/change-password" className="btn btn-outline">{t('auth.changePassword')}</Link>
                 </div>
             </div>
         </AdminLayout>
@@ -1028,7 +1436,6 @@ const CreateUserModal = ({ onClose, onCreated }) => {
 // Placeholder Pages
 // ============================================================================
 const PlaceholderPage = ({ title, icon, description }) => {
-    const { t } = useI18n();
     return (
         <AdminLayout title={title}>
             <div className="empty-state">
@@ -1045,40 +1452,66 @@ const PlaceholderPage = ({ title, icon, description }) => {
 // ============================================================================
 const AppRouter = () => {
     const { t } = useI18n();
+    const navigate = useNavigate();
+
+    // Common props passed to page components
+    const pageProps = { AdminLayout, useAuth, useToast, useI18n, navigate };
+
+    // Wrapper for application detail that extracts route param
+    const ApplicationDetailWrapper = () => {
+        const { id } = useParams();
+        return <ApplicationDetailPage {...pageProps} applicationId={id} />;
+    };
 
     return (
         <Routes>
-            {/* Guest routes */}
-            <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
-            <Route path="/forgot-password" element={<GuestRoute><ForgotPasswordPage /></GuestRoute>} />
+            {/* Public landing */}
+            <Route path="/" element={<LandingPage />} />
+
+            {/* Auth routes (guest only) */}
+            <Route path="/auth/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
+            <Route path="/auth/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
+            <Route path="/auth/forgot-password" element={<GuestRoute><ForgotPasswordPage /></GuestRoute>} />
+
+            {/* Legacy routes redirect */}
+            <Route path="/login" element={<Navigate to="/auth/login" replace />} />
+            <Route path="/forgot-password" element={<Navigate to="/auth/forgot-password" replace />} />
 
             {/* Protected routes - all roles */}
             <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-            <Route path="/change-password" element={<ProtectedRoute><ChangePasswordPage /></ProtectedRoute>} />
+            <Route path="/settings/change-password" element={<ProtectedRoute><ChangePasswordPage /></ProtectedRoute>} />
+            <Route path="/change-password" element={<Navigate to="/settings/change-password" replace />} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-            <Route path="/calendar" element={<ProtectedRoute><PlaceholderPage title={t('nav.calendar')} icon="📅" /></ProtectedRoute>} />
+            <Route path="/calendar" element={<ProtectedRoute><CalendarPage {...pageProps} /></ProtectedRoute>} />
+            <Route path="/notifications" element={<ProtectedRoute><NotificationsPage {...pageProps} /></ProtectedRoute>} />
+            <Route path="/scholarships" element={<ProtectedRoute><ScholarshipsPage {...pageProps} /></ProtectedRoute>} />
 
             {/* Student routes */}
-            <Route path="/my-mentor" element={<RoleRoute roles={['student']}><PlaceholderPage title={t('nav.myMentor')} icon="👨‍🏫" /></RoleRoute>} />
-            <Route path="/my-applications" element={<RoleRoute roles={['student', 'mentor']}><PlaceholderPage title={t('nav.applications')} icon="📋" /></RoleRoute>} />
+            <Route path="/my-mentor" element={<RoleRoute roles={['student']}><MyMentorPage {...pageProps} /></RoleRoute>} />
+            <Route path="/mentor-directory" element={<RoleRoute roles={['student']}><MentorDirectoryPage {...pageProps} /></RoleRoute>} />
+            <Route path="/my-applications" element={<RoleRoute roles={['student', 'mentor']}><ApplicationsListPage {...pageProps} /></RoleRoute>} />
 
             {/* Mentor routes */}
-            <Route path="/my-students" element={<RoleRoute roles={['mentor']}><PlaceholderPage title={t('nav.myStudents')} icon="👩‍🎓" /></RoleRoute>} />
+            <Route path="/my-students" element={<RoleRoute roles={['mentor']}><MyStudentsPage {...pageProps} /></RoleRoute>} />
 
-            {/* Management routes (admin + director) */}
+            {/* Application detail (student, mentor, admin) */}
+            <Route path="/applications/:id" element={<ProtectedRoute><ApplicationDetailWrapper /></ProtectedRoute>} />
+
+            {/* Management routes */}
             <Route path="/students" element={<RoleRoute roles={['admin', 'director']}><PlaceholderPage title={t('nav.students')} icon="🎓" /></RoleRoute>} />
-            <Route path="/mentors" element={<RoleRoute roles={['admin', 'director']}><PlaceholderPage title={t('nav.mentors')} icon="👥" /></RoleRoute>} />
-            <Route path="/applications" element={<RoleRoute roles={['admin', 'director']}><PlaceholderPage title={t('nav.applications')} icon="📁" /></RoleRoute>} />
-            <Route path="/universities" element={<RoleRoute roles={['admin', 'director']}><PlaceholderPage title={t('nav.universities')} icon="🏛️" /></RoleRoute>} />
-            <Route path="/approvals" element={<RoleRoute roles={['admin', 'director']}><PlaceholderPage title={t('nav.approvals')} icon="✅" /></RoleRoute>} />
+            <Route path="/mentors" element={<RoleRoute roles={['admin']}><AdminMentorPage {...pageProps} /></RoleRoute>} />
+            <Route path="/mentor-assignments" element={<RoleRoute roles={['admin']}><AdminAssignmentPage {...pageProps} /></RoleRoute>} />
+            <Route path="/applications" element={<RoleRoute roles={['admin', 'director']}><ApplicationsListPage {...pageProps} /></RoleRoute>} />
+            <Route path="/universities" element={<RoleRoute roles={['admin', 'director']}><UniversitiesPage {...pageProps} /></RoleRoute>} />
+            <Route path="/approvals" element={<RoleRoute roles={['admin', 'director']}><ApprovalsPage {...pageProps} /></RoleRoute>} />
+            <Route path="/mentor-load" element={<RoleRoute roles={['admin', 'director']}><MentorLoadPage {...pageProps} /></RoleRoute>} />
             <Route path="/reports" element={<RoleRoute roles={['admin', 'director']}><PlaceholderPage title={t('nav.reports')} icon="📈" /></RoleRoute>} />
 
             {/* Admin only */}
             <Route path="/users" element={<RoleRoute roles={['admin']}><UsersPage /></RoleRoute>} />
 
-            {/* Default redirect */}
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            {/* Catch-all */}
+            <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
     );
 };

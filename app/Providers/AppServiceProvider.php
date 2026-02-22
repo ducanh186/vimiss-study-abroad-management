@@ -37,6 +37,21 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(5)->by($key);
         });
 
+        // POST /register/request-code: 3/min per IP + 1/min per email
+        RateLimiter::for('register-request-code', function (HttpRequest $request) {
+            $ip = $request->ip();
+            $email = strtolower($request->input('email', ''));
+            return [
+                Limit::perMinute(3)->by('reg-code-ip:' . $ip),
+                Limit::perMinute(1)->by('reg-code-email:' . $email),
+            ];
+        });
+
+        // POST /register: 5/min per IP
+        RateLimiter::for('register', function (HttpRequest $request) {
+            return Limit::perMinute(5)->by('register-ip:' . $request->ip());
+        });
+
         // POST /forgot-password/request: 3/min per IP + 1/min per email
         RateLimiter::for('forgot-password-request', function (HttpRequest $request) {
             $ip = $request->ip();

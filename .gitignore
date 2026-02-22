@@ -15,3 +15,18 @@ yarn-error.log
 /.idea
 /.vscode
 database/database.sqlite
+
+# Separate Spring Boot project (has own repo)
+/be-neu
+
+# Docker persistent data (local only)
+docker-data/
+
+# Storage runtime (sessions, views, logs)
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/framework/testing/
+/storage/logs/*
+!/storage/framework/sessions/.gitkeep
+!/storage/framework/views/.gitkeep
+!/storage/logs/.gitkeep

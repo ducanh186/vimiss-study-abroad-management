@@ -22,6 +22,8 @@ return Application::configure(basePath: dirname(__DIR__))
             '/login',
             '/logout',
             'forgot-password/*',
+            'register/*',
+            'register',
             'api/*'
         ]);
         
