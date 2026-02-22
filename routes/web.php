@@ -35,6 +35,15 @@ Route::prefix('forgot-password')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
+| Public Landing Page (no auth required)
+|--------------------------------------------------------------------------
+*/
+
+Route::view('/', 'landing')->name('landing');
+Route::view('/home', 'landing')->name('home');
+
+/*
+|--------------------------------------------------------------------------
 | SPA Catch-All Route
 |--------------------------------------------------------------------------
 */
@@ -43,4 +52,4 @@ Route::view('/login', 'spa')->name('login');
 
 Route::get('/{any}', function () {
     return view('spa');
-})->where('any', '.*');
+})->where('any', '.+');

@@ -35,4 +35,15 @@ return [
         ],
     ],
 
+    'google_drive' => [
+        'credentials_path' => env('GOOGLE_DRIVE_CREDENTIALS_PATH'),
+        'project_id'       => env('GOOGLE_DRIVE_PROJECT_ID'),
+        'private_key_id'   => env('GOOGLE_DRIVE_PRIVATE_KEY_ID'),
+        'private_key'      => env('GOOGLE_DRIVE_PRIVATE_KEY'),
+        'client_email'     => env('GOOGLE_DRIVE_CLIENT_EMAIL'),
+        'client_id'        => env('GOOGLE_DRIVE_CLIENT_ID'),
+        'root_folder_id'   => env('GOOGLE_DRIVE_ROOT_FOLDER_ID'),
+        'app_name'         => env('GOOGLE_DRIVE_APP_NAME', 'Vimiss'),
+    ],
+
 ];
