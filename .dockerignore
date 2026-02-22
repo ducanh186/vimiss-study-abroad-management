@@ -1,0 +1,33 @@
+# == Docker build context exclusions ==
+# Keep build fast by excluding non-essential files
+
+.git
+.gitignore
+.env
+.env.backup
+.env.docker
+
+# Docker data volumes (never copy into image)
+docker-data/
+
+# Node modules (fe-neu container installs its own)
+fe-neu/node_modules
+fe-neu/dist
+fe-neu/test-results
+node_modules
+
+# PHP vendor (api container runs composer install)
+vendor
+
+# IDE / editor
+.vscode
+.idea
+.fleet
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Not needed in images
+be-neu
+
