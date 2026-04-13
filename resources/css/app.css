@@ -1033,8 +1033,8 @@ body {
 .auth-panel-left {
     width: 40%;
     flex-shrink: 0;
-    background: #0088CC;
-    background-image: url('data:image/svg+xml,%3Csvg width="100" height="100" xmlns="http://www.w3.org/2000/svg"%3E%3Cpattern id="cubes" x="0" y="0" width="50" height="50" patternUnits="userSpaceOnUse"%3E%3Cpath d="M25 0 L50 25 L25 50 L0 25 Z" fill="%23ffffff" opacity="0.03"/%3E%3C/pattern%3E%3Crect width="100" height="100" fill="url(%23cubes)"/%3E%3C/svg%3E');
+    background-color: #0077B6 !important;
+    background-image: linear-gradient(135deg, #005f92 0%, #0077B6 40%, #0096D6 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1046,9 +1046,14 @@ body {
 .auth-panel-left::before {
     content: '';
     position: absolute;
-    inset: 0;
-    opacity: 0.1;
+    inset: -50%;
+    width: 200%;
+    height: 200%;
+    opacity: 1;
     pointer-events: none;
+    background:
+        radial-gradient(circle at 30% 70%, rgba(56, 182, 255, 0.2) 0%, transparent 50%),
+        radial-gradient(circle at 70% 30%, rgba(0, 150, 214, 0.15) 0%, transparent 50%);
 }
 
 .auth-panel-left-content {

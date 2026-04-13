@@ -29,4 +29,5 @@ docker-data/
 /storage/logs/*
 !/storage/framework/sessions/.gitkeep
 !/storage/framework/views/.gitkeep
-!/storage/logs/.gitkeep
+/.env.production
+/vim.pem

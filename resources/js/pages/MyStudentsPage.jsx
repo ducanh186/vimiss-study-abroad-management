@@ -7,6 +7,7 @@ import { mentorApi, applicationApi } from '../services/api';
 export const MyStudentsPage = ({ AdminLayout, useAuth, useToast, useI18n, navigate }) => {
     const { user } = useAuth();
     const toast = useToast();
+    const { t } = useI18n();
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -16,7 +17,7 @@ export const MyStudentsPage = ({ AdminLayout, useAuth, useToast, useI18n, naviga
                 const data = await mentorApi.myStudents();
                 setStudents(data.students || []);
             } catch (err) {
-                toast?.error('Failed to load students');
+                toast?.error(t('mentor.failedLoadStudents'));
             } finally {
                 setLoading(false);
             }
@@ -26,35 +27,35 @@ export const MyStudentsPage = ({ AdminLayout, useAuth, useToast, useI18n, naviga
     const handleCreateApp = async (studentId) => {
         try {
             const data = await applicationApi.create({ student_id: studentId });
-            toast?.success('Application created!');
+            toast?.success(t('application.applicationCreated'));
             navigate?.(`/my-applications`);
         } catch (err) {
-            toast?.error(err.response?.data?.message || 'Failed to create application');
+            toast?.error(err.response?.data?.message || t('application.failedCreateApp'));
         }
     };
 
     return (
-        <AdminLayout title="My Students">
+        <AdminLayout title={t('mentor.myStudents')}>
             <div className="card">
                 <div className="card-header">
-                    <span className="card-title">Assigned Students</span>
+                    <span className="card-title">{t('mentor.assignedStudents')}</span>
                 </div>
                 <div className="card-body" style={{ padding: 0 }}>
                     {loading ? (
                         <div style={{ padding: '2rem', textAlign: 'center' }}><div className="loading-spinner" style={{ margin: '0 auto' }}></div></div>
                     ) : students.length === 0 ? (
-                        <div className="empty-state"><div className="empty-state-icon">👩‍🎓</div><div className="empty-state-title">No students assigned</div></div>
+                        <div className="empty-state"><div className="empty-state-icon">👩‍🎓</div><div className="empty-state-title">{t('mentor.noStudentsAssigned')}</div></div>
                     ) : (
                         <table className="data-table">
                             <thead>
                                 <tr>
-                                    <th>Name</th>
-                                    <th>Email</th>
-                                    <th>Scholarship Type</th>
-                                    <th>GPA</th>
-                                    <th>HSK</th>
-                                    <th>Assigned At</th>
-                                    <th>Actions</th>
+                                    <th>{t('common.name')}</th>
+                                    <th>{t('common.email')}</th>
+                                    <th>{t('mentor.scholarshipType')}</th>
+                                    <th>{t('mentor.gpa')}</th>
+                                    <th>{t('mentor.hsk')}</th>
+                                    <th>{t('mentor.assignedAt')}</th>
+                                    <th>{t('common.actions')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -68,7 +69,7 @@ export const MyStudentsPage = ({ AdminLayout, useAuth, useToast, useI18n, naviga
                                         <td>{new Date(a.assigned_at).toLocaleDateString()}</td>
                                         <td>
                                             <button className="btn btn-primary btn-sm" onClick={() => handleCreateApp(a.student_id)}>
-                                                + Create Application
+                                                {t('application.createApplication')}
                                             </button>
                                         </td>
                                     </tr>

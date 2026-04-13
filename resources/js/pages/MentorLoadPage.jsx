@@ -6,6 +6,7 @@ import { mentorApi } from '../services/api';
 // ============================================================================
 export const MentorLoadPage = ({ AdminLayout, useAuth, useToast, useI18n }) => {
     const toast = useToast();
+    const { t } = useI18n();
     const [mentors, setMentors] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -15,7 +16,7 @@ export const MentorLoadPage = ({ AdminLayout, useAuth, useToast, useI18n }) => {
             const data = await mentorApi.mentorLoad();
             setMentors(data.mentors || []);
         } catch (err) {
-            toast?.error('Failed to load mentor load data');
+            toast?.error(t('mentor.failedLoadData'));
         } finally {
             setLoading(false);
         }
@@ -25,39 +26,39 @@ export const MentorLoadPage = ({ AdminLayout, useAuth, useToast, useI18n }) => {
 
     const getLoadLevel = (current, max) => {
         const ratio = current / max;
-        if (ratio >= 1) return { label: 'Full', color: 'badge-error' };
-        if (ratio >= 0.7) return { label: 'High', color: 'badge-warning' };
-        if (ratio >= 0.4) return { label: 'Medium', color: 'badge-info' };
-        return { label: 'Low', color: 'badge-success' };
+        if (ratio >= 1) return { label: t('mentor.loadFull'), color: 'badge-error' };
+        if (ratio >= 0.7) return { label: t('mentor.loadHigh'), color: 'badge-warning' };
+        if (ratio >= 0.4) return { label: t('mentor.loadMedium'), color: 'badge-info' };
+        return { label: t('mentor.loadLow'), color: 'badge-success' };
     };
 
     return (
-        <AdminLayout title="Mentor Load Report">
-            <h2 style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: '1rem' }}>Mentor Load Overview</h2>
+        <AdminLayout title={t('mentor.loadReport')}>
+            <h2 style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: '1rem' }}>{t('mentor.loadOverview')}</h2>
 
             {loading ? (
                 <div style={{ textAlign: 'center', padding: '2rem' }}><div className="loading-spinner" style={{ margin: '0 auto' }}></div></div>
             ) : mentors.length === 0 ? (
-                <div className="empty-state"><div className="empty-state-title">No mentors found</div></div>
+                <div className="empty-state"><div className="empty-state-title">{t('mentor.noMentorsFound')}</div></div>
             ) : (
                 <>
                     {/* Summary */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
                         <div className="card"><div className="card-body" style={{ textAlign: 'center' }}>
                             <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{mentors.length}</div>
-                            <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>Total Mentors</div>
+                            <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>{t('mentor.totalMentors')}</div>
                         </div></div>
                         <div className="card"><div className="card-body" style={{ textAlign: 'center' }}>
                             <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{mentors.filter(m => m.is_active).length}</div>
-                            <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>Active</div>
+                            <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>{t('common.active')}</div>
                         </div></div>
                         <div className="card"><div className="card-body" style={{ textAlign: 'center' }}>
                             <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{mentors.reduce((sum, m) => sum + (m.current_student_count || 0), 0)}</div>
-                            <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>Total Assigned Students</div>
+                            <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>{t('mentor.totalAssignedStudents')}</div>
                         </div></div>
                         <div className="card"><div className="card-body" style={{ textAlign: 'center' }}>
                             <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{mentors.reduce((sum, m) => sum + ((m.capacity_max || 5) - (m.current_student_count || 0)), 0)}</div>
-                            <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>Available Slots</div>
+                            <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>{t('mentor.availableSlotsLabel')}</div>
                         </div></div>
                     </div>
 
@@ -67,13 +68,13 @@ export const MentorLoadPage = ({ AdminLayout, useAuth, useToast, useI18n }) => {
                             <table className="data-table">
                                 <thead>
                                     <tr>
-                                        <th>Staff Code</th>
-                                        <th>Name</th>
-                                        <th>Specialty</th>
-                                        <th>Students</th>
-                                        <th>Capacity</th>
-                                        <th>Load</th>
-                                        <th>Active</th>
+                                        <th>{t('mentor.staffCode')}</th>
+                                        <th>{t('common.name')}</th>
+                                        <th>{t('mentor.specialty')}</th>
+                                        <th>{t('mentor.students')}</th>
+                                        <th>{t('mentor.capacity')}</th>
+                                        <th>{t('mentor.load')}</th>
+                                        <th>{t('common.active')}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -96,7 +97,7 @@ export const MentorLoadPage = ({ AdminLayout, useAuth, useToast, useI18n }) => {
                                                 </td>
                                                 <td>
                                                     <span className={`badge ${m.is_active ? 'badge-success' : 'badge-error'}`}>
-                                                        {m.is_active ? 'Yes' : 'No'}
+                                                        {m.is_active ? t('common.yes') : t('common.no')}
                                                     </span>
                                                 </td>
                                             </tr>

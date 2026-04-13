@@ -7,6 +7,7 @@ import { reviewApi } from '../services/api';
 export const ApprovalsPage = ({ AdminLayout, useAuth, useToast, useI18n }) => {
     const { user } = useAuth();
     const toast = useToast();
+    const { t } = useI18n();
     const [reviews, setReviews] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('pending');
@@ -19,7 +20,7 @@ export const ApprovalsPage = ({ AdminLayout, useAuth, useToast, useI18n }) => {
             const data = await reviewApi.list(params);
             setReviews(data.reviews || []);
         } catch (err) {
-            toast?.error('Failed to load review requests');
+            toast?.error(t('approval.failedLoad'));
         } finally {
             setLoading(false);
         }
@@ -30,10 +31,10 @@ export const ApprovalsPage = ({ AdminLayout, useAuth, useToast, useI18n }) => {
     const handleDecision = async (id, status, notes = '') => {
         try {
             await reviewApi.review(id, { status, notes });
-            toast?.success(`Request ${status}`);
+            toast?.success(t('approval.requestStatus', { status }));
             fetchReviews();
         } catch (err) {
-            toast?.error(err.response?.data?.message || 'Failed to process review');
+            toast?.error(err.response?.data?.message || t('approval.failedProcess'));
         }
     };
 
@@ -44,14 +45,14 @@ export const ApprovalsPage = ({ AdminLayout, useAuth, useToast, useI18n }) => {
     };
 
     return (
-        <AdminLayout title="Approvals">
+        <AdminLayout title={t('approval.approvals')}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h2 style={{ fontSize: '1.2rem', fontWeight: 600 }}>Review Queue</h2>
+                <h2 style={{ fontSize: '1.2rem', fontWeight: 600 }}>{t('approval.reviewQueue')}</h2>
                 <select className="form-input" style={{ width: 'auto' }} value={filter} onChange={e => setFilter(e.target.value)}>
-                    <option value="">All</option>
-                    <option value="pending">Pending</option>
-                    <option value="approved">Approved</option>
-                    <option value="rejected">Rejected</option>
+                    <option value="">{t('common.all')}</option>
+                    <option value="pending">{t('approval.pending')}</option>
+                    <option value="approved">{t('approval.approved')}</option>
+                    <option value="rejected">{t('approval.rejected')}</option>
                 </select>
             </div>
 
@@ -60,18 +61,18 @@ export const ApprovalsPage = ({ AdminLayout, useAuth, useToast, useI18n }) => {
                     {loading ? (
                         <div style={{ padding: '2rem', textAlign: 'center' }}><div className="loading-spinner" style={{ margin: '0 auto' }}></div></div>
                     ) : reviews.length === 0 ? (
-                        <div className="empty-state"><div className="empty-state-icon">✅</div><div className="empty-state-title">No review requests</div></div>
+                        <div className="empty-state"><div className="empty-state-icon">✅</div><div className="empty-state-title">{t('approval.noReviewRequests')}</div></div>
                     ) : (
                         <table className="data-table">
                             <thead>
                                 <tr>
-                                    <th>ID</th>
-                                    <th>Application</th>
-                                    <th>Type</th>
-                                    <th>Submitted By</th>
-                                    <th>Status</th>
-                                    <th>Date</th>
-                                    <th>Actions</th>
+                                    <th>{t('common.id')}</th>
+                                    <th>{t('approval.application')}</th>
+                                    <th>{t('common.type')}</th>
+                                    <th>{t('approval.submittedBy')}</th>
+                                    <th>{t('common.status')}</th>
+                                    <th>{t('common.date')}</th>
+                                    <th>{t('common.actions')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -86,16 +87,16 @@ export const ApprovalsPage = ({ AdminLayout, useAuth, useToast, useI18n }) => {
                                         <td>
                                             {r.status === 'pending' ? (
                                                 <div style={{ display: 'flex', gap: '0.25rem' }}>
-                                                    <button className="btn btn-primary btn-sm" onClick={() => handleDecision(r.id, 'approved')}>Approve</button>
+                                                    <button className="btn btn-primary btn-sm" onClick={() => handleDecision(r.id, 'approved')}>{t('approval.approve')}</button>
                                                     <button className="btn btn-outline btn-sm" style={{ color: 'var(--color-error)', borderColor: 'var(--color-error)' }}
                                                         onClick={() => {
-                                                            const notes = window.prompt('Rejection reason:');
+                                                            const notes = window.prompt(t('approval.rejectionReason'));
                                                             if (notes !== null) handleDecision(r.id, 'rejected', notes);
-                                                        }}>Reject</button>
+                                                        }}>{t('approval.reject')}</button>
                                                 </div>
                                             ) : (
                                                 <span style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem' }}>
-                                                    {r.reviewed_by ? `by ${r.reviewer?.name}` : '—'}
+                                                    {r.reviewed_by ? t('approval.reviewedBy', { name: r.reviewer?.name }) : '—'}
                                                 </span>
                                             )}
                                         </td>

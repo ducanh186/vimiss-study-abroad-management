@@ -1,33 +1,48 @@
-# == Docker build context exclusions ==
-# Keep build fast by excluding non-essential files
+# ==========================================================
+# Docker build context exclusions
+# Giữ build nhanh bằng cách loại bỏ file không cần thiết
+# ==========================================================
 
+# ── VCS / local env ─────────────────────────────────────────
 .git
 .gitignore
 .env
 .env.backup
 .env.docker
+.env.example
 
-# Docker data volumes (never copy into image)
+# ── Local runtime/cache artifacts ───────────────────────────
 docker-data/
+.sunlint-cache/
+.phpunit.result.cache
+storage/framework/sessions/*
+storage/framework/views/*
+storage/framework/testing/
+storage/logs/*
+storage/debugbar/
 
-# Node modules (fe-neu container installs its own)
-fe-neu/node_modules
-fe-neu/dist
-fe-neu/test-results
-node_modules
+# ── Dependencies (installed inside image) ───────────────────
+node_modules/
+vendor/
 
-# PHP vendor (api container runs composer install)
-vendor
+# ── Test / dev-only files ───────────────────────────────────
+tests/
+phpunit.xml
+dev.bat
+DEMO_GUIDE.md
+README.md
 
-# IDE / editor
-.vscode
-.idea
-.fleet
+# ── Spring Boot project (unrelated, has own lifecycle) ──────
+be-neu/
 
-# OS
+# ── IDE / editor ────────────────────────────────────────────
+.vscode/
+.idea/
+.fleet/
+
+# ── OS junk ─────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
-
-# Not needed in images
-be-neu
+*.swp
+*.swo
 

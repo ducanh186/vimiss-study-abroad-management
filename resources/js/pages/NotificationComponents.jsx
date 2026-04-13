@@ -65,6 +65,7 @@ export const NotificationBell = ({ onClick }) => {
 // ============================================================================
 export const NotificationsPage = ({ AdminLayout, useAuth, useToast, useI18n }) => {
     const toast = useToast();
+    const { t } = useI18n();
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -74,7 +75,7 @@ export const NotificationsPage = ({ AdminLayout, useAuth, useToast, useI18n }) =
             const data = await notificationApi.list();
             setNotifications(data.notifications || []);
         } catch (err) {
-            toast?.error('Failed to load notifications');
+            toast?.error(t('notification.failedLoad'));
         } finally {
             setLoading(false);
         }
@@ -95,9 +96,9 @@ export const NotificationsPage = ({ AdminLayout, useAuth, useToast, useI18n }) =
         try {
             await notificationApi.markAllRead();
             setNotifications(prev => prev.map(n => ({ ...n, read_at: n.read_at || new Date().toISOString() })));
-            toast?.success('All marked as read');
+            toast?.success(t('notification.allMarkedRead'));
         } catch (err) {
-            toast?.error('Failed');
+            toast?.error(t('common.failed'));
         }
     };
 
@@ -112,16 +113,16 @@ export const NotificationsPage = ({ AdminLayout, useAuth, useToast, useI18n }) =
     };
 
     return (
-        <AdminLayout title="Notifications">
+        <AdminLayout title={t('notification.notifications')}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h2 style={{ fontSize: '1.2rem', fontWeight: 600 }}>Notifications</h2>
-                <button className="btn btn-outline btn-sm" onClick={handleMarkAllRead}>Mark all as read</button>
+                <h2 style={{ fontSize: '1.2rem', fontWeight: 600 }}>{t('notification.notifications')}</h2>
+                <button className="btn btn-outline btn-sm" onClick={handleMarkAllRead}>{t('notification.markAllRead')}</button>
             </div>
 
             {loading ? (
                 <div style={{ textAlign: 'center', padding: '2rem' }}><div className="loading-spinner" style={{ margin: '0 auto' }}></div></div>
             ) : notifications.length === 0 ? (
-                <div className="empty-state"><div className="empty-state-icon">🔔</div><div className="empty-state-title">No notifications</div></div>
+                <div className="empty-state"><div className="empty-state-icon">🔔</div><div className="empty-state-title">{t('notification.noNotifications')}</div></div>
             ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     {notifications.map(n => (
@@ -144,7 +145,7 @@ export const NotificationsPage = ({ AdminLayout, useAuth, useToast, useI18n }) =
                                 <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' }}>
                                     {new Date(n.created_at).toLocaleString()}
                                 </div>
-                                {!n.read_at && <span className="badge badge-info" style={{ fontSize: '0.65rem' }}>New</span>}
+                                {!n.read_at && <span className="badge badge-info" style={{ fontSize: '0.65rem' }}>{t('common.new')}</span>}
                             </div>
                         </div>
                     ))}

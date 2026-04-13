@@ -1,37 +1,28 @@
 # ==========================================================
-# Vimiss Study Abroad Management — Docker Compose
-# Build & run:  docker compose up --build
-# Open:         http://localhost:8080
+# Vimiss — Production Docker Compose (EC2)
+# Usage: docker compose -f docker-compose.prod.yml up --build -d
 # ==========================================================
 
 services:
-  # ── Laravel API (PHP Alpine + Vite-built assets) ──────────
   api:
     build:
       context: .
       dockerfile: docker/api/Dockerfile
     container_name: vimiss_api
     env_file:
-      - .env.docker
+      - .env.production
     volumes:
-      # Persistent SQLite database (dùng /data/ riêng, tránh ghi đè /var/www/database)
       - ./docker-data/sqlite:/data/sqlite
-      # Persistent storage (uploads, sessions, cache)
       - ./docker-data/storage:/var/www/storage
-      # Logs (dễ truy cập từ host)
       - ./docker-data/logs:/var/www/storage/logs
-      # Google Drive service account JSON
       - ./docker-data/drive/drive-sa.json:/var/www/drive-sa.json:ro
-    ports:
-      - "8000:8000"
-    restart: unless-stopped
+    restart: always
     healthcheck:
       test: ["CMD", "php", "-r", "echo @file_get_contents('http://127.0.0.1:8000/api/health') ? 'ok' : 'fail';"]
       interval: 10s
       timeout: 5s
       retries: 10
 
-  # ── Nginx (Alpine) — static files + reverse proxy ────────
   web:
     build:
       context: .
@@ -41,5 +32,5 @@ services:
       api:
         condition: service_healthy
     ports:
-      - "8080:80"
-    restart: unless-stopped
+      - "80:80"
+    restart: always

@@ -69,6 +69,8 @@ Route::middleware(['auth:sanctum', 'must_change_password'])->group(function () {
         Route::post('/student/choose-mentor', [StudentProfileController::class, 'chooseMentor']);
         Route::post('/student/random-mentor', [StudentProfileController::class, 'randomMentor']);
         Route::get('/student/my-mentor', [StudentProfileController::class, 'myMentor']);
+        Route::post('/student/ask-mentor', [StudentProfileController::class, 'askMentor']);
+        Route::get('/student/my-inquiries', [StudentProfileController::class, 'myInquiries']);
     });
 
     /*
@@ -78,6 +80,8 @@ Route::middleware(['auth:sanctum', 'must_change_password'])->group(function () {
     */
     Route::middleware('role:mentor')->group(function () {
         Route::get('/mentor/my-students', [MentorController::class, 'myStudents']);
+        Route::get('/mentor/inquiries', [MentorController::class, 'myInquiries']);
+        Route::post('/mentor/inquiries/{inquiryId}/answer', [MentorController::class, 'answerInquiry']);
     });
 
     /*

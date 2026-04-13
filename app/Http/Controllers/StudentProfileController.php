@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\MentorInquiry;
 use App\Models\MentorStudentAssignment;
+use App\Models\Notification;
 use App\Models\StudentProfile;
 use App\Models\User;
 use App\Services\AssignMentorService;
@@ -136,6 +138,66 @@ class StudentProfileController extends Controller
             'mentor' => $assignment->mentor,
             'mentor_profile' => $assignment->mentor->mentorProfile,
             'assignment' => $assignment,
+        ]);
+    }
+
+    /**
+     * Student: ask a mentor a question before choosing
+     */
+    public function askMentor(Request $request): JsonResponse
+    {
+        $request->validate([
+            'mentor_id' => ['required', 'exists:users,id'],
+            'question' => ['required', 'string', 'max:1000'],
+        ]);
+
+        $user = $request->user();
+        $mentor = User::findOrFail($request->mentor_id);
+
+        if (!$mentor->isMentor()) {
+            return response()->json(['message' => 'Target user is not a mentor.'], 422);
+        }
+
+        // Limit: max 5 unanswered questions per student-mentor pair
+        $unanswered = MentorInquiry::where('student_id', $user->id)
+            ->where('mentor_id', $mentor->id)
+            ->unanswered()
+            ->count();
+        if ($unanswered >= 5) {
+            return response()->json(['message' => 'You have too many unanswered questions to this mentor. Please wait for replies.'], 422);
+        }
+
+        $inquiry = MentorInquiry::create([
+            'student_id' => $user->id,
+            'mentor_id' => $mentor->id,
+            'question' => $request->question,
+        ]);
+
+        Notification::notify($mentor->id, 'New Student Inquiry', "Student {$user->name} asked you a question.", 'mentor_inquiry');
+
+        return response()->json([
+            'message' => 'Question sent to mentor.',
+            'inquiry' => $inquiry->load('mentor'),
+        ], 201);
+    }
+
+    /**
+     * Student: list my inquiries to mentors
+     */
+    public function myInquiries(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $query = MentorInquiry::with('mentor')
+            ->where('student_id', $user->id)
+            ->orderByDesc('created_at');
+
+        if ($mentorId = $request->query('mentor_id')) {
+            $query->where('mentor_id', $mentorId);
+        }
+
+        return response()->json([
+            'inquiries' => $query->get(),
         ]);
     }
 

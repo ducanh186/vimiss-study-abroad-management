@@ -141,7 +141,6 @@ const RoleRoute = ({ children, roles }) => {
 const LoadingScreen = () => (
     <div className="loading-screen">
         <div className="loading-spinner"></div>
-        <p>Loading...</p>
     </div>
 );
 
@@ -332,29 +331,28 @@ const AuthLayout = ({ children, twoColumn = false }) => {
                         <div className="auth-panel-brand">
                             <div className="auth-brand-logo">VIMISS</div>
                         </div>
-                        <h1 className="auth-panel-left-title">Hành Trình Du Học<br />Bắt Đầu Từ Đây</h1>
+                        <h1 className="auth-panel-left-title">{t('auth.heroTitle').split('\n').map((line, i) => <React.Fragment key={i}>{line}{i === 0 && <br />}</React.Fragment>)}</h1>
                         <p className="auth-panel-left-subtitle">
-                            Vimiss kết nối học sinh Việt Nam với các trường đại học hàng đầu thế giới. 
-                            Tư vấn chuyên nghiệp, quản lý hồ sơ hiệu quả, và hỗ trợ toàn diện trên mọi chặng đường.
+                            {t('auth.heroSubtitle')}
                         </p>
                         <ul className="auth-panel-left-features">
                             <li className="auth-panel-feature">
                                 <svg className="feature-check" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                                 </svg>
-                                <span>Mentor Chuyên Nghiệp</span>
+                                <span>{t('auth.heroFeature1')}</span>
                             </li>
                             <li className="auth-panel-feature">
                                 <svg className="feature-check" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                                 </svg>
-                                <span>Quản Lý Hồ Sơ Thông Minh</span>
+                                <span>{t('auth.heroFeature2')}</span>
                             </li>
                             <li className="auth-panel-feature">
                                 <svg className="feature-check" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                                 </svg>
-                                <span>Hỗ Trợ Toàn Diện</span>
+                                <span>{t('auth.heroFeature3')}</span>
                             </li>
                         </ul>
                     </div>
@@ -936,19 +934,19 @@ const Sidebar = ({ collapsed, mobileOpen, onToggle, onMobileClose, user }) => {
     const navItems = [
         { path: '/dashboard', label: t('nav.dashboard'), icon: '📊', show: true },
         { path: '/my-mentor', label: t('nav.myMentor'), icon: '👨‍🏫', show: isStudent },
-        { path: '/mentor-directory', label: 'Mentor Directory', icon: '📖', show: isStudent },
+        { path: '/mentor-directory', label: t('nav.mentorDirectory'), icon: '📖', show: isStudent },
         { path: '/my-applications', label: t('nav.applications'), icon: '📋', show: isStudent || isMentor },
         { path: '/my-students', label: t('nav.myStudents'), icon: '👩‍🎓', show: isMentor },
-        { path: '/scholarships', label: 'Scholarships', icon: '🎓', show: true },
+        { path: '/scholarships', label: t('nav.scholarships'), icon: '🎓', show: true },
         { path: '/students', label: t('nav.students'), icon: '🎓', show: isManagement },
         { path: '/mentors', label: t('nav.mentors'), icon: '👥', show: isManagement },
-        { path: '/mentor-assignments', label: 'Assignments', icon: '🔗', show: isAdmin },
+        { path: '/mentor-assignments', label: t('nav.assignments'), icon: '🔗', show: isAdmin },
         { path: '/applications', label: t('nav.applications'), icon: '📁', show: isManagement },
         { path: '/universities', label: t('nav.universities'), icon: '🏛️', show: isManagement },
         { path: '/approvals', label: t('nav.approvals'), icon: '✅', show: isManagement },
         { path: '/calendar', label: t('nav.calendar'), icon: '📅', show: true },
-        { path: '/notifications', label: 'Notifications', icon: '🔔', show: false },
-        { path: '/mentor-load', label: 'Mentor Load', icon: '📈', show: isManagement },
+        { path: '/notifications', label: t('nav.notifications'), icon: '🔔', show: false },
+        { path: '/mentor-load', label: t('nav.mentorLoad'), icon: '📈', show: isManagement },
         { path: '/reports', label: t('nav.reports'), icon: '📈', show: isManagement },
         { path: '/users', label: t('nav.users'), icon: '⚙️', show: isAdmin },
     ].filter(item => item.show);
@@ -1131,7 +1129,7 @@ const ChangePasswordPage = () => {
             const errs = err.response?.data?.errors;
             if (errs?.current_password) setFieldErrors({ currentPassword: errs.current_password[0] });
             else if (errs?.password) setFieldErrors({ password: errs.password[0] });
-            else setError(err.response?.data?.message || 'Failed to change password');
+            else setError(err.response?.data?.message || t('auth.failedChangePassword'));
         } finally {
             setIsLoading(false);
         }
@@ -1243,9 +1241,9 @@ const ProfilePage = () => {
         try {
             await axios.put('/api/profile', { name });
             await fetchUser();
-            toast?.success('Profile updated successfully.');
+            toast?.success(t('user.profileUpdated'));
         } catch (err) {
-            toast?.error(err.response?.data?.message || 'Failed to update profile');
+            toast?.error(err.response?.data?.message || t('user.failedUpdateProfile'));
         } finally {
             setIsLoading(false);
         }
@@ -1299,7 +1297,7 @@ const UsersPage = () => {
             const response = await axios.get('/api/users');
             setUsers(response.data.data || []);
         } catch (err) {
-            toast?.error('Failed to load users');
+            toast?.error(t('user.failedLoad'));
         } finally {
             setIsLoading(false);
         }
@@ -1367,7 +1365,7 @@ const CreateUserModal = ({ onClose, onCreated }) => {
         setIsLoading(true);
         try {
             await axios.post('/api/users', form);
-            toast?.success('User created successfully.');
+            toast?.success(t('user.createdSuccess'));
             onCreated();
         } catch (err) {
             if (err.response?.data?.errors) {
@@ -1375,7 +1373,7 @@ const CreateUserModal = ({ onClose, onCreated }) => {
                     Object.entries(err.response.data.errors).map(([k, v]) => [k, v[0]])
                 ));
             } else {
-                toast?.error(err.response?.data?.message || 'Failed to create user');
+                toast?.error(err.response?.data?.message || t('user.failedCreate'));
             }
         } finally {
             setIsLoading(false);
@@ -1441,7 +1439,7 @@ const PlaceholderPage = ({ title, icon, description }) => {
             <div className="empty-state">
                 <div className="empty-state-icon">{icon}</div>
                 <div className="empty-state-title">{title}</div>
-                <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>{description || 'This module will be implemented in a future phase.'}</p>
+                <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>{description || t('placeholder.futureModule')}</p>
             </div>
         </AdminLayout>
     );

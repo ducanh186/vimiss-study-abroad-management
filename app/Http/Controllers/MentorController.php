@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\MentorInquiry;
 use App\Models\MentorProfile;
 use App\Models\MentorStudentAssignment;
+use App\Models\Notification;
 use App\Models\User;
 use App\Services\AssignMentorService;
 use Illuminate\Http\JsonResponse;
@@ -171,6 +173,57 @@ class MentorController extends Controller
 
         return response()->json([
             'students' => $assignments,
+        ]);
+    }
+
+    /**
+     * Mentor: list inquiries from students
+     */
+    public function myInquiries(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $query = MentorInquiry::with('student')
+            ->where('mentor_id', $user->id)
+            ->orderByDesc('created_at');
+
+        if ($request->query('unanswered')) {
+            $query->unanswered();
+        }
+
+        return response()->json([
+            'inquiries' => $query->get(),
+        ]);
+    }
+
+    /**
+     * Mentor: answer a student's inquiry
+     */
+    public function answerInquiry(Request $request, int $inquiryId): JsonResponse
+    {
+        $request->validate([
+            'answer' => ['required', 'string', 'max:2000'],
+        ]);
+
+        $user = $request->user();
+        $inquiry = MentorInquiry::where('id', $inquiryId)
+            ->where('mentor_id', $user->id)
+            ->firstOrFail();
+
+        if ($inquiry->answered_at) {
+            return response()->json(['message' => 'This inquiry has already been answered.'], 422);
+        }
+
+        $inquiry->update([
+            'answer' => $request->answer,
+            'answered_at' => now(),
+        ]);
+
+        Notification::notify($inquiry->student_id, 'Mentor Answered Your Question', "Mentor {$user->name} has replied to your inquiry.", 'mentor_inquiry');
+
+        return response()->json([
+            'message' => 'Inquiry answered.',
+            'inquiry' => $inquiry->fresh()->load('student'),
         ]);
     }
 
